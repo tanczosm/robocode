@@ -1,0 +1,1127 @@
+package ja;
+
+import robocode.*;
+import robocode.util.Utils;
+import java.awt.*;
+import java.awt.geom.*;     // for Point2D's
+import java.util.ArrayList; // for collection of waves
+import ja.ags.utils.dataStructures.trees.thirdGenKD.*;
+import ja.ags.utils.dataStructures.MaxHeap;
+import java.awt.event.KeyEvent;
+import static java.awt.event.KeyEvent.*;
+ 
+// TODO:
+/*
+ * Work on creating a queue of Scan objects.   Anytime a bullet is fired add the situational
+ * Scan to the queue.   When an onBulletHit event or onBulletHitBullet event is triggered
+ * call registerHit on the bullet in the queue who is closest to the actual bullet.   This will register
+ * the outcome of that situation.
+ * 
+ */
+public class CrushTurtle extends AdvancedRobot {
+
+	public static double FIRE_POWER=2;
+	public static double FIRE_SPEED=20-FIRE_POWER*3;
+	
+public double tempRotate = 0;
+public double enemyProjectedDistance = 0;
+
+	public DistanceFunction distanceFunction = new ManhattanDistanceFunction();
+		
+    public static int MAX_SELECTED_SITUATIONS = 12;
+	public static double KERNEL_DENSITY_BANDWIDTH = 14d;  // defaults to 6.0d
+	
+    public static int BINS = 47;
+    public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
+    public Point2D.Double _myLocation;     // our bot's location
+	public Point2D.Double _lastLocation;
+	public double _lastHeading = 0;
+	public double _lastVelocity = 0;
+	public double _lastVelocityChange = 0;
+	
+	public static double _shotHits = 0;
+	public static double _shotMisses = 0;
+	
+    public static Enemy nme = new Enemy();
+ 
+    public ArrayList<EnemyWave> _enemyWaves;
+    public ArrayList<Integer> _surfDirections;
+    public ArrayList<Double> _surfAbsBearings;
+	public ArrayList<Situation> _nodeQueue = new ArrayList<Situation>(100);
+	
+	public ArrayList<Point2D.Double> targetPoints = new ArrayList<Point2D.Double>(); // just for storing targeting data
+	
+	// Let's store some data points!!
+	public final static int SITUATION_DIMENSIONS = 6;
+	//									LateralVelocity, Acceleration, NormalizedDistance, WallTriesForward, WallTriesBack, AdvancingVelocity
+	public double[] SITUATION_WEIGHTS = {0.5,0.5,0.5,0.5,0.5,0.5};
+	public static KdTree<Situation> situations = new KdTree<Situation>(SITUATION_DIMENSIONS);
+ 
+    // We must keep track of the enemy's energy level to detect EnergyDrop,
+    // indicating a bullet is fired
+	public ScannedRobotEvent _lastScan = null;
+ 
+    // This is a rectangle that represents an 800x600 battle field,
+    // used for a simple, iterative WallSmoothing method (by Kawigi).
+    // If you're not familiar with WallSmoothing, the wall stick indicates
+    // the amount of space we try to always have on either end of the tank
+    // (extending straight out the front or back) before touching a wall.
+    public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
+    public static double WALL_STICK = 160;
+	
+	ArrayList<CrushTurtle.GunWave> gunWaves=new ArrayList<CrushTurtle.GunWave>();
+	static double gunAngles[]=new double[16];
+ 
+    public void run() {
+        _enemyWaves = new ArrayList<EnemyWave>();
+        _surfDirections = new ArrayList<Integer>();
+        _surfAbsBearings = new ArrayList<Double>();
+
+ 		setAhead(200);
+        setAdjustGunForRobotTurn(true);
+        setAdjustRadarForGunTurn(true);
+ 
+		setBodyColor(new Color(50, 50, 50));
+		setGunColor(new Color(0, 150, 50));
+		setRadarColor(new Color(0, 100, 100));
+		setBulletColor(new Color(255, 255, 100));
+		setScanColor(new Color(255, 200, 200));
+
+		
+        do {
+            // basic mini-radar code
+            turnRadarRightRadians(Double.POSITIVE_INFINITY);
+			doGun();
+			
+        } while (true);
+    }
+	
+	public void onRoundEnded(RoundEndedEvent event) {
+       System.gc();
+	   nme.energy = 100;
+   	}
+	
+	public void updateFiringPower ()
+	{
+//	public static double FIRE_POWER=2;
+//	public static double FIRE_SPEED=20-FIRE_POWER*3;	
+		double playerEnergy = getEnergy();
+		double enemyBulletPower = Enemy.getLastBulletPower(_enemyWaves);
+		double _shotsTotal = _shotHits+_shotMisses;
+		double _shotAccuracy = (_shotsTotal == 0 ? 0 : ((_shotHits/(_shotsTotal))*100));
+		 
+		double _enemyShotsTotal = nme.enemyShotHits+nme.enemyShotMisses;
+		double _enemyShotAccuracy = (_enemyShotsTotal == 0 ? 0 : ((nme.enemyShotHits/(_enemyShotsTotal))*100));
+		 		
+		FIRE_POWER = 1.95;
+		
+		if (nme.distance < 70d)
+			FIRE_POWER = 3;
+		if (nme.distance < 200d || _shotAccuracy > 0.33d)
+		    FIRE_POWER = 2.95d;
+		else
+		{
+		    //power = scale based on my energy and enemy energy expected at the time this bullet hits if they continue to shoot every time gunheat is 0
+			int ticks = (int)(nme.distance / (20-FIRE_POWER*3));  // How many ticks will it take to traverse this distance
+			int expectedTicksPerShot = (int)((1 + (FIRE_POWER / 5)) / 0.1d);
+			double playerExpectedEnergy = (playerEnergy - FIRE_POWER);
+			int enemyExpectedTicksPerShot = (int)((1 + (enemyBulletPower / 5)) / 0.1d);  // Enemy gunheat / 0.1 .. Gives how many ticks per shot
+			double enemyExpectedEnergy = nme.energy - (ticks/enemyExpectedTicksPerShot) * enemyBulletPower;  // Assume they stick with same bullet power
+		
+		    if (enemyBulletPower < FIRE_POWER)
+		         FIRE_POWER = Math.max(0.1, enemyBulletPower-0.1);
+				 
+		}
+			 
+		if (FIRE_POWER > playerEnergy)
+		{
+			FIRE_POWER = 0.1d;
+		}		
+				 
+		FIRE_SPEED=20-FIRE_POWER*3;	
+	}
+   
+	public void doGun ()
+	{
+		if (_surfAbsBearings.size() == 0 || _lastScan == null)
+			return;
+			
+		double absBearing =  _surfAbsBearings.get(0) - Math.PI;
+		double gunHeading = getGunHeadingRadians();
+		double heading = _lastScan.getHeadingRadians();
+		double velocity = _lastScan.getVelocity();
+		double x = getX(), y = getY();
+		
+		//updateFiringPower ();
+
+		/*
+		 * logs a gun wave when we fire;
+		 */
+		if(getGunHeat()==0){
+			logFiringWave(nme);
+		}
+	
+		/*
+		 * This method checks our waves to see if they have reached the enemy yet.
+		 */
+		checkFiringWaves(project(new Point2D.Double(getX(),getY()),absBearing,nme.distance));
+ 
+		/*
+		 * Aiming our gun and firing
+		 */
+		setBulletColor(new Color(255, 255, 100));
+		if (nme.distance > 70d)
+		{
+	//	setTurnGunRightRadians(tempRotate);
+			double gunRotate = Utils.normalRelativeAngle(absBearing-getGunHeadingRadians())
+					+gunAngles[8+(int)(nme.velocity*Math.sin(nme.headingRadians-absBearing))];
+					
+			if (tempRotate != Double.MAX_VALUE)
+			{
+				gunRotate = tempRotate;  // why not.. this is the KNN learned angle
+				enemyProjectedDistance = (enemyProjectedDistance == 0 ? nme.distance : enemyProjectedDistance);
+			}
+			
+			setTurnGunRightRadians(gunRotate);
+		
+//< Math.atan2(9, enemyProjectedDistance)
+// gunRotate < Math.atan2(9, enemyProjectedDistance)
+			if (getEnergy()+0.1 > FIRE_POWER && Math.abs(getGunTurnRemaining()) < 10)
+				setFire(FIRE_POWER);
+		}
+		else
+		{
+			double projectedTime = 0; 
+			
+
+			double dX = nme.location.getX(), dY = nme.location.getY();
+			double currentHeading = heading;
+			double deltaHeading = heading - _lastHeading;
+			
+			do {
+				projectedTime++;
+				dX += Math.sin(currentHeading) * velocity;
+				dY += Math.cos(currentHeading) * velocity;
+				currentHeading += deltaHeading;
+			} while (Point2D.distance(x, y, dX, dY) > projectedTime * (20-3*3) && _fieldRect.contains(dX,dY));
+			
+			setTurnGunRightRadians(Utils.normalRelativeAngle(Math.atan2(dX-x,dY-y)- gunHeading));
+			setBulletColor(new Color(255, 70, 70));
+			
+			if (getEnergy()+0.1 > FIRE_POWER)
+				setFire(FIRE_POWER);
+		}	
+		
+		_lastHeading = heading;
+	}
+	
+
+ 
+    public void onScannedRobot(ScannedRobotEvent e) {
+	/*
+  		_myLocation = new Point2D.Double(getX(), getY());
+ 
+        double lateralVelocity = getVelocity()*Math.sin(e.getBearingRadians());
+        double absBearing = e.getBearingRadians() + getHeadingRadians();
+ 
+		double angle = Math.toRadians((getHeading() + e.getBearing()) % 360);
+        double enemyX = (getX() + Math.sin(angle) * e.getDistance());
+        double enemyY = (getY() + Math.cos(angle) * e.getDistance());
+		
+		nme.location = new Point2D.Double(enemyX, enemyY);
+        nme.name = e.getName();
+		nme.energy = e.getEnergy();
+		nme.velocity = e.getVelocity();
+		nme.bearing = e.getBearing();
+		nme.bearingRadians = e.getBearingRadians();
+		nme.heading = e.getHeading();
+		nme.headingRadians = e.getHeadingRadians();
+		nme.distance = e.getDistance();
+		
+        setTurnRadarRightRadians(Utils.normalRelativeAngle(absBearing - getRadarHeadingRadians()) * 2);
+ 
+        _surfDirections.add(0,
+            new Integer((lateralVelocity >= 0) ? 1 : -1));
+        _surfAbsBearings.add(0, new Double(absBearing + Math.PI));
+ 
+ 
+        double bulletPower = nme.energy - e.getEnergy();
+        if (bulletPower < 3.01 && bulletPower > 0.09
+            && _surfDirections.size() > 2) {
+            EnemyWave ew = new EnemyWave();
+            ew.fireTime = getTime() - 1;
+            ew.bulletVelocity = bulletVelocity(bulletPower);
+            ew.distanceTraveled = bulletVelocity(bulletPower);
+            ew.direction = ((Integer)_surfDirections.get(2)).intValue();
+            ew.directAngle = ((Double)_surfAbsBearings.get(2)).doubleValue();
+            ew.fireLocation = (Point2D.Double)nme.location.clone(); // last tick
+ 
+            _enemyWaves.add(ew);
+        }
+ 
+        nme.energy = e.getEnergy();
+ 
+        // update after EnemyWave detection, because that needs the previous
+        // enemy location as the source of the wave
+        nme.location = project(_myLocation, absBearing, e.getDistance());
+ 
+        updateWaves();
+        doSurfing();
+ 
+        // gun code would go here...
+		doGun();	
+		
+		_lastScan = e;
+*/
+
+		if (_lastScan == null)
+		{
+			_lastScan = e;
+			return;
+		}
+		_lastScan = e;
+		
+        _myLocation = new Point2D.Double(getX(), getY());
+
+		double lateralVelocity = getVelocity()*Math.sin(e.getBearingRadians()); // Player's lateral velocity
+		double enemyHeading = getHeadingRadians() + _lastScan.getBearingRadians();
+		double relativeHeading = _lastScan.getHeadingRadians() - enemyHeading;
+		double heading = _lastScan.getHeadingRadians();
+		double x = getX();
+		double y = getY();
+		double distance = _lastScan.getDistance();
+		long time = getTime();
+		double gunHeading = getGunHeadingRadians();		
+			    
+		//calculate indexes for enemy	
+		double velocity = _lastScan.getVelocity();
+		double absVelocity = Math.abs(velocity);
+		double enemyLateralVelocity = velocity * Math.sin(relativeHeading);
+		double advancingVelocity = -Math.cos(relativeHeading) * velocity;
+		double direction = lateralVelocity < 0 ? -1 : 1;		
+		
+		double energy = getEnergy();
+		double shotPower = FIRE_POWER;
+
+        double absBearing = e.getBearingRadians() + getHeadingRadians();
+ 
+		double angle = Math.toRadians((getHeading() + e.getBearing()) % 360);
+        double enemyX = (_myLocation.getX() + Math.sin(angle) * e.getDistance());
+        double enemyY = (_myLocation.getY() + Math.cos(angle) * e.getDistance());
+		
+		double acceleration = 0;
+		if(_lastVelocity != Double.MAX_VALUE){
+		    
+			if(sign(_lastVelocity) == sign(velocity)){
+				acceleration = Math.abs(velocity) - Math.abs(_lastVelocity);
+			}
+			else{
+				acceleration = Math.abs(velocity - _lastVelocity);
+			}
+		}
+		else{
+			acceleration = velocity;
+		}
+		acceleration = Math.abs(Math.max(Math.min(acceleration, 2d), -2d));
+		
+		_lastVelocityChange++;
+		if(Math.abs(_lastVelocity - velocity) > 0.1){
+		    _lastVelocityChange = 0;
+		}
+		double velocityChangeValue = Math.min(_lastVelocityChange / (distance / 14.3d), 4d);	
+		
+		//wall distance forward
+		double wallTries = getWallTries(enemyHeading, direction, x, y, distance);
+		double wallTriesBack = getWallTries(enemyHeading, -direction, x, y, distance);
+		
+		enemyLateralVelocity = Math.abs(lateralVelocity);  // Two lateral velocities seem to be going on here..
+		
+		nme.location = new Point2D.Double(enemyX, enemyY);
+        nme.name = e.getName();
+		nme.energy = _lastScan.getEnergy();  // Don't update enemy energy with current scan
+		nme.velocity = e.getVelocity();
+		nme.bearing = e.getBearing();
+		nme.bearingRadians = e.getBearingRadians();
+		nme.heading = e.getHeading();
+		nme.headingRadians = e.getHeadingRadians();
+		nme.distance = e.getDistance();
+		
+		Situation scan = new Situation();
+		scan.Time = time - 1;
+		scan.LateralVelocity = enemyLateralVelocity / 8d;
+		scan.AdvancingVelocity = advancingVelocity / 16d;
+		scan.WallTriesForward = wallTries / 20d;
+		scan.WallTriesBack = wallTriesBack / 20d;
+		scan.NormalizedDistance = distance / 800d;
+		scan.Distance = distance;
+		scan.Velocity = absVelocity / 8d;
+		scan.Acceleration = acceleration / 2d;
+		scan.SinceVelocityChange = velocityChangeValue / 4d;		
+		scan.Direction = direction;
+		scan.EnemyHeading = enemyHeading;
+		scan.RX = x;
+		scan.RY = y;
+		if(shotPower > 0){
+		    scan.setBulletVelocity(shotPower);
+		}
+		else{
+		    scan.setBulletVelocity(1.90d);
+		}	
+		
+		_nodeQueue.add(scan);
+		
+		for (int i = _nodeQueue.size(); --i >= 0;)
+		{
+			Situation s = _nodeQueue.get(i);
+			if (s.getDistance(time) > distance - s.BulletVelocity * 0.5d) // If we passed the enemy
+			{
+				if (!s.setBearing(enemyX, enemyY)) {
+					// add scan to tree
+					situations.addPoint(s.getPoint(), s);
+					//System.out.println("Added scan point");
+				}
+				
+				if (s.getDistance(time) > (distance + 30d))
+				{
+					_nodeQueue.remove(i);
+					// remove scan from gun
+				}
+			}
+		}		
+		
+		/*
+		MaxHeap<Situation> similarSituations = null;
+		if (situations.size() > 0)
+		{
+			similarSituations = situations.findNearestNeighbors(scan.getPoint(), 20, distanceFunction);
+		}
+		*/
+
+		
+        setTurnRadarRightRadians(Utils.normalRelativeAngle(absBearing - getRadarHeadingRadians()) * 2);
+ 
+        _surfDirections.add(0,
+            new Integer((lateralVelocity >= 0) ? 1 : -1));
+        _surfAbsBearings.add(0, new Double(absBearing + Math.PI));
+ 
+        double bulletPower = nme.energy - e.getEnergy();
+        if (bulletPower < 3.01 && bulletPower > 0.09
+            && _surfDirections.size() > 2) {
+            EnemyWave ew = new EnemyWave();
+            ew.fireTime = getTime() - 1;
+			ew.bulletPower = bulletPower;
+            ew.bulletVelocity = bulletVelocity(bulletPower);
+            ew.distanceTraveled = bulletVelocity(bulletPower);
+            ew.direction = ((Integer)_surfDirections.get(2)).intValue();
+            ew.directAngle = ((Double)_surfAbsBearings.get(2)).doubleValue();
+            ew.fireLocation = (Point2D.Double)nme.location.clone(); // last tick
+ 
+            _enemyWaves.add(ew);
+        }
+ 
+        nme.energy = _lastScan.getEnergy();
+ 
+        // update after EnemyWave detection, because that needs the previous
+        // enemy location as the source of the wave
+        nme.location = project(_myLocation, absBearing, e.getDistance());
+ 
+ 
+        // gun code would go here...
+		
+	    MAX_SELECTED_SITUATIONS = Math.max(1, Math.min(225, situations.size() / 9));
+		
+		NearestNeighborIterator<Situation> similarSituationsIterator = situations.getNearestNeighborIterator(scan.getPoint(), MAX_SELECTED_SITUATIONS, distanceFunction);
+		ArrayList<Situation> bestNodes = new ArrayList<Situation>();
+		
+		int ow = 10;
+		Graphics2D g = getGraphics();
+
+	//	setMaxVelocity(500);
+		g.setColor(new Color(0xff, 0x00, 0x00, 0x80));
+		while(similarSituationsIterator.hasNext())
+		{	
+			Situation node = similarSituationsIterator.next();
+			
+			bestNodes.add(node);
+			
+			double tbear = (node.BearingRadians * scan.MaxAngle) / node.MaxAngle;
+			Point2D.Double outp = project(_myLocation, enemyHeading + tbear , node.Distance+node.DistanceDelta);
+		
+		//	if (Math.abs(node.Distance-distance) < 150)
+			g.drawOval((int) (outp.getX() - ow/2), (int) (outp.getY() - ow/2), ow, ow);		
+				
+		}
+		
+		
+		int results = bestNodes.size();
+		int bestIndex = 0;
+		double bestDensity = 0;
+			
+			for(int i = results; --i >= 0;){
+				
+				/*if (Math.abs(bestNodes.get(i).Distance - distance) > 150)
+					continue;*/
+					
+				double density = 0;
+				double u;
+				for(int j = results; --j >= 0;){
+					double kdeDiff = bestNodes.get(i).Bearing - bestNodes.get(j).Bearing;
+					//double kdeDiff = Math.abs(bestNodes.get(i).Distance - bestNodes.get(j).Distance);
+
+					density += Math.exp(
+								(
+									u = (kdeDiff) / KERNEL_DENSITY_BANDWIDTH // BAND_WIDTH
+								) 
+								* u 
+								* -0.5d
+							);
+				}		
+			
+				
+				if(density > bestDensity){
+					bestDensity = density;
+					bestIndex = i;
+				}
+			}				
+			
+		if (results > 0)
+		{	
+		
+			Situation best = bestNodes.get(bestIndex);
+			double theBearing = (best.BearingRadians * scan.MaxAngle) / best.MaxAngle;
+			enemyProjectedDistance = best.Distance+best.DistanceDelta;
+			Point2D.Double _nextLocation = project(_myLocation, getHeadingRadians(), -getVelocity());
+			Point2D.Double target = project(_nextLocation, Utils.normalRelativeAngle(enemyHeading + theBearing) , enemyProjectedDistance);
+			
+			if (getGunHeat() == 0)
+			{
+				targetPoints.add(target);
+				if (targetPoints.size() > 8)
+					targetPoints.remove(0);
+							
+			}
+			tempRotate = Utils.normalRelativeAngle(enemyHeading + theBearing - gunHeading);	
+			
+			/*
+			double projectedDistance = best.Distance + best.DistanceDelta;
+			double projectedX = x + Math.sin(enemyHeading + best.BearingRadians) * projectedDistance;
+			double projectedY = y + Math.cos(enemyHeading + best.BearingRadians) * projectedDistance;
+			if(_fieldRect.contains(projectedX, projectedY)){
+				tempRotate = Utils.normalRelativeAngle(enemyHeading + theBearing - gunHeading);				
+			}	
+			else
+			{
+				tempRotate = Double.MAX_VALUE;
+			}
+			*/
+		}
+
+		double intensity = 0;
+		for (Point2D.Double target : targetPoints)
+		{
+			intensity++;
+			double it = intensity / targetPoints.size();
+			
+			g.setColor(new Color(0xff, 0xff, 0x00, (int)(it*255)));	
+			g.drawOval((int) (target.getX() - ow/2), (int) (target.getY() - ow/2), ow, ow);			
+		}
+		
+        updateWaves();
+        doSurfing();
+		
+		doGun();
+		
+		
+		_lastScan = e;
+		_lastVelocity = velocity;
+		_lastVelocityChange = velocityChangeValue;
+	
+    }  
+	
+	// e.getBullet().getX()
+	public void registerBulletHit(double bulletX, double bulletY)
+	{
+		long time = getTime();  // ADDED -1.. bug???? 
+		double greatestDistance = Double.MAX_VALUE;
+		Situation best = null;
+		for(int i = _nodeQueue.size(); --i >= 0;){
+			Situation s = _nodeQueue.get(i);
+			double d = Math.abs(s.getDistance(time) - Point2D.distance(s.RX, s.RY, bulletX, bulletY));
+			if(d < greatestDistance && d < 20d){
+				greatestDistance = d;
+				best = s;
+			}
+		}
+		
+		if(best != null){
+			best.registerHit(bulletX, bulletY);
+		}	
+	}
+	
+	public static int sign (double p)
+	{
+		return p < 0 ? -1 : 1;
+	}
+ 
+	public double getWallTries(double heading, double dir, double x, double y, double distance){		
+
+		double wallIncrement = 0.0407d * dir;
+		double eHeading = heading;
+		double nextX = 0;
+		double nextY = 0;
+		double wallTries = -1;
+		do{
+		    eHeading += wallIncrement;
+		    nextX = x + Math.sin(eHeading) * distance;
+		    nextY = y + Math.cos(eHeading) * distance;
+		    wallTries++;
+		}while(_fieldRect.contains(nextX, nextY) && wallTries < 20);
+		
+		return wallTries;
+	}
+	
+    public void updateWaves() {
+        for (int x = 0; x < _enemyWaves.size(); x++) {
+            EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+ 
+            ew.distanceTraveled = (getTime() - ew.fireTime) * ew.bulletVelocity;
+            if (ew.distanceTraveled >
+                _myLocation.distance(ew.fireLocation) + 50) {
+                _enemyWaves.remove(x);
+				nme.enemyShotMisses++;
+                x--;
+            }
+        }
+    }
+ 
+    public EnemyWave getClosestSurfableWave() {
+        double closestDistance = 50000; // I juse use some very big number here
+        EnemyWave surfWave = null;
+ 
+        for (int x = 0; x < _enemyWaves.size(); x++) {
+            EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+            double distance = _myLocation.distance(ew.fireLocation)
+                - ew.distanceTraveled;
+ 
+            if (distance > ew.bulletVelocity && distance < closestDistance) {
+                surfWave = ew;
+                closestDistance = distance;
+            }
+        }
+ 
+        return surfWave;
+    }
+ 
+    // Given the EnemyWave that the bullet was on, and the point where we
+    // were hit, calculate the index into our stat array for that factor.
+    public static int getFactorIndex(EnemyWave ew, Point2D.Double targetLocation) {
+        double offsetAngle = (absoluteBearing(ew.fireLocation, targetLocation)
+            - ew.directAngle);
+        double factor = Utils.normalRelativeAngle(offsetAngle)
+            / maxEscapeAngle(ew.bulletVelocity) * ew.direction;
+ 
+        return (int)limit(0,
+            (factor * ((BINS - 1) / 2)) + ((BINS - 1) / 2),
+            BINS - 1);
+    }
+ 
+    // Given the EnemyWave that the bullet was on, and the point where we
+    // were hit, update our stat array to reflect the danger in that area.
+    public void logHit(EnemyWave ew, Point2D.Double targetLocation) {
+        int index = getFactorIndex(ew, targetLocation);
+ 
+        for (int x = 0; x < BINS; x++) {
+            // for the spot bin that we were hit on, add 1;
+            // for the bins next to it, add 1 / 2;
+            // the next one, add 1 / 5; and so on...
+            _surfStats[x] += 1.0 / (Math.pow(index - x, 2) + 1);
+        }
+    }
+ 
+	public void onBulletHit(BulletHitEvent e)
+	{
+		nme.energy -= e.getEnergy();
+		registerBulletHit(e.getBullet().getX(), e.getBullet().getY());
+		
+		_shotHits++;
+	}
+	
+	public void onBulletMissed(BulletMissedEvent event) {
+       _shotMisses++;
+   	}
+	
+	public void onBulletHitBullet(BulletHitBulletEvent e)
+	{
+		registerBulletHit(e.getBullet().getX(), e.getBullet().getY());	
+
+		nme.enemyShotMisses++;  // When this bullet wave passes  
+		
+		//processHit(e.getBullet());
+	}
+	 
+    public void onHitByBullet(HitByBulletEvent e) {
+	
+		nme.energy += robocode.Rules.getBulletHitBonus(e.getBullet().getPower());
+		nme.enemyShotHits++;
+		
+		processHit(e.getBullet());
+		/*
+        // If the _enemyWaves collection is empty, we must have missed the
+        // detection of this wave somehow.
+        if (!_enemyWaves.isEmpty()) {
+            Point2D.Double hitBulletLocation = new Point2D.Double(
+                e.getBullet().getX(), e.getBullet().getY());
+            EnemyWave hitWave = null;
+ 
+            // look through the EnemyWaves, and find one that could've hit us.
+            for (int x = 0; x < _enemyWaves.size(); x++) {
+                EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+ 
+                if (Math.abs(ew.distanceTraveled -
+                    _myLocation.distance(ew.fireLocation)) < 50
+                    && Math.abs(bulletVelocity(e.getBullet().getPower()) 
+                        - ew.bulletVelocity) < 0.001) {
+                    hitWave = ew;
+                    break;
+                }
+            }
+ 
+            if (hitWave != null) {
+                logHit(hitWave, hitBulletLocation);
+ 
+                // We can remove this wave now, of course.
+                _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
+            }
+        }
+		*/
+    }
+	
+	public void processHit(Bullet b)
+	{
+        // If the _enemyWaves collection is empty, we must have missed the
+        // detection of this wave somehow.
+        if (!_enemyWaves.isEmpty()) {
+            Point2D.Double hitBulletLocation = new Point2D.Double(
+                b.getX(), b.getY());
+            EnemyWave hitWave = null;
+ 
+            // look through the EnemyWaves, and find one that could've hit us.
+            for (int x = 0; x < _enemyWaves.size(); x++) {
+                EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+ 
+                if (Math.abs(ew.distanceTraveled -
+                    hitBulletLocation.distance(ew.fireLocation)) < 50  // CHANGED _myLocation to hitBulletLocation
+                    && Math.abs(bulletVelocity(b.getPower()) 
+                        - ew.bulletVelocity) < 0.001) {
+                    hitWave = ew;
+                    break;
+                }
+            }
+ 
+            if (hitWave != null) {
+                logHit(hitWave, hitBulletLocation);
+ 
+                // We can remove this wave now, of course.
+                _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
+            }
+        }		
+	}
+ 
+    // CREDIT: mini sized predictor from Apollon, by rozu
+    // http://robowiki.net?Apollon
+    public Point2D.Double predictPosition(EnemyWave surfWave, int direction) {
+    	Point2D.Double predictedPosition = (Point2D.Double)_myLocation.clone();
+    	double predictedVelocity = getVelocity();
+    	double predictedHeading = getHeadingRadians();
+    	double maxTurning, moveAngle, moveDir;
+ 
+        int counter = 0; // number of ticks in the future
+        boolean intercepted = false;
+ 
+    	do {
+    		moveAngle =
+                wallSmoothing(predictedPosition, absoluteBearing(surfWave.fireLocation,
+                predictedPosition) + (direction * (Math.PI/2)), direction)
+                - predictedHeading;
+    		moveDir = 1;
+ 
+    		if(Math.cos(moveAngle) < 0) {
+    			moveAngle += Math.PI;
+    			moveDir = -1;
+    		}
+ 
+    		moveAngle = Utils.normalRelativeAngle(moveAngle);
+ 
+    		// maxTurning is built in like this, you can't turn more then this in one tick
+    		maxTurning = Math.PI/720d*(40d - 3d*Math.abs(predictedVelocity));
+    		predictedHeading = Utils.normalRelativeAngle(predictedHeading
+                + limit(-maxTurning, moveAngle, maxTurning));
+ 
+    		// this one is nice ;). if predictedVelocity and moveDir have
+            // different signs you want to breack down
+    		// otherwise you want to accelerate (look at the factor "2")
+    		predictedVelocity += (predictedVelocity * moveDir < 0 ? 2*moveDir : moveDir);
+    		predictedVelocity = limit(-8, predictedVelocity, 8);
+ 
+    		// calculate the new predicted position
+    		predictedPosition = project(predictedPosition, predictedHeading, predictedVelocity);
+ 
+            counter++;
+ 
+            if (predictedPosition.distance(surfWave.fireLocation) <
+                surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
+                + surfWave.bulletVelocity) {
+                intercepted = true;
+            }
+    	} while(!intercepted && counter < 500);
+ 
+    	return predictedPosition;
+    }
+ 
+    public double checkDanger(EnemyWave surfWave, int direction) {
+        int index = getFactorIndex(surfWave,
+            predictPosition(surfWave, direction));
+ 
+        return _surfStats[index];
+    }
+ 
+    public void doSurfing() {
+        EnemyWave surfWave = getClosestSurfableWave();
+ 
+        if (surfWave == null) { return; }
+ 
+        double dangerLeft = checkDanger(surfWave, -1);
+        double dangerRight = checkDanger(surfWave, 1);
+		double dangerMiddle = _surfStats[getFactorIndex(surfWave,_myLocation)];
+ 
+        double goAngle = absoluteBearing(surfWave.fireLocation, _myLocation);
+		double avoid = 0;
+		
+		if (_myLocation.distance(nme.location) < 150)
+			avoid = 5;
+
+		if (dangerMiddle < dangerRight && dangerMiddle < dangerLeft)
+		{
+			setMaxVelocity(0);
+		}
+        else if (dangerLeft < dangerRight) {
+			
+			setMaxVelocity(1000);
+            goAngle = wallSmoothing(_myLocation, goAngle - (Math.PI/2) - avoid, -1);
+        } else {
+			setMaxVelocity(1000);
+            goAngle = wallSmoothing(_myLocation, goAngle + (Math.PI/2) + avoid, 1);
+        }
+ 
+        setBackAsFront(this, goAngle);
+    }
+ 
+    // This can be defined as an inner class if you want.
+    class EnemyWave {
+        Point2D.Double fireLocation;
+        long fireTime;
+        double bulletVelocity, directAngle, distanceTraveled, bulletPower;
+        int direction;
+ 
+        public EnemyWave() { }
+    }
+ 
+    // CREDIT: Iterative WallSmoothing by Kawigi
+    //   - return absolute angle to move at after account for WallSmoothing
+    // robowiki.net?WallSmoothing
+    public double wallSmoothing(Point2D.Double botLocation, double angle, int orientation) {
+        while (!_fieldRect.contains(project(botLocation, angle, 160))) {
+            angle += orientation*0.05;
+        }
+        return angle;
+    }
+ 
+    // CREDIT: from CassiusClay, by PEZ
+    //   - returns point length away from sourceLocation, at angle
+    // robowiki.net?CassiusClay
+    public static Point2D.Double project(Point2D.Double sourceLocation, double angle, double length) {
+        return new Point2D.Double(sourceLocation.x + Math.sin(angle) * length,
+            sourceLocation.y + Math.cos(angle) * length);
+    }
+ 
+    // got this from RaikoMicro, by Jamougha, but I think it's used by many authors
+    //  - returns the absolute angle (in radians) from source to target points
+    public static double absoluteBearing(Point2D.Double source, Point2D.Double target) {
+        return Math.atan2(target.x - source.x, target.y - source.y);
+    }
+ 
+    public static double limit(double min, double value, double max) {
+        return Math.max(min, Math.min(value, max));
+    }
+ 
+    public static double bulletVelocity(double power) {
+        return (20D - (3D*power));
+    }
+ 
+    public static double maxEscapeAngle(double velocity) {
+        return Math.asin(8.0/velocity);
+    }
+ 
+    public static void setBackAsFront(AdvancedRobot robot, double goAngle) {
+        double angle =
+            Utils.normalRelativeAngle(goAngle - robot.getHeadingRadians());
+        if (Math.abs(angle) > (Math.PI/2)) {
+            if (angle < 0) {
+                robot.setTurnRightRadians(Math.PI + angle);
+            } else {
+                robot.setTurnLeftRadians(Math.PI - angle);
+            }
+            robot.setBack(100);
+        } else {
+            if (angle < 0) {
+                robot.setTurnLeftRadians(-1*angle);
+           } else {
+                robot.setTurnRightRadians(angle);
+           }
+            robot.setAhead(100);
+        }
+    }
+ 
+	public void logFiringWave(Enemy enemy){
+		GunWave w=new GunWave();
+		w.absBearing= enemy.bearingRadians+getHeadingRadians();
+		w.bulletVelocity=FIRE_SPEED;
+		w.fireLocation=new Point2D.Double(getX(),getY());
+		w.velSeg=(int)(enemy.velocity*Math.sin(enemy.headingRadians-w.absBearing));
+		w.fireTime=getTime();
+		gunWaves.add(w);
+	}
+	/*
+	 * This method checks firing waves to see if they have passed the enemy yet.
+	 */
+	public void checkFiringWaves(Point2D.Double ePos){
+		GunWave w;
+		for(int i=0;i<gunWaves.size();i++){
+			w=gunWaves.get(i);
+			double dist = (getTime()-w.fireTime)*w.bulletVelocity;
+			if(dist>=w.fireLocation.distance(ePos)){
+				gunAngles[w.velSeg+8]=Utils.normalRelativeAngle(Utils.normalAbsoluteAngle(Math.atan2(ePos.x-w.fireLocation.x, ePos.y-w.fireLocation.y))-w.absBearing);
+				//registerBulletHit(double bulletX, double bulletY);  // Where is that bullet?
+				//Maybe include adding bearings for missed bullets here?
+				gunWaves.remove(w);
+			}
+		}
+	}
+	
+    public void onPaint(java.awt.Graphics2D g) {
+         g.setColor(java.awt.Color.red);
+         for(int i = 0; i < _enemyWaves.size(); i++){
+            EnemyWave w = (EnemyWave)(_enemyWaves.get(i));
+            Point2D.Double center = w.fireLocation;
+ 
+            //int radius = (int)(w.distanceTraveled + w.bulletVelocity);
+            //hack to make waves line up visually, due to execution sequence in robocode engine
+            //use this only if you advance waves in the event handlers (eg. in onScannedRobot())
+            //NB! above hack is now only necessary for robocode versions before 1.4.2
+            //otherwise use: 
+            int radius = (int)w.distanceTraveled;
+ 
+            //Point2D.Double center = w.fireLocation;
+            if(radius - 40 < center.distance(_myLocation))
+               g.drawOval((int)(center.x - radius ), (int)(center.y - radius), radius*2, radius*2);
+         }
+		 
+		 java.text.DecimalFormat df = new java.text.DecimalFormat("#.##");
+		 double _shotsTotal = _shotHits+_shotMisses;
+		 double _shotAccuracy = (_shotsTotal == 0 ? 0 : ((_shotHits/(_shotsTotal))*100));
+		 
+		 double _enemyShotsTotal = nme.enemyShotHits+nme.enemyShotMisses;
+		 double _enemyShotAccuracy = (_enemyShotsTotal == 0 ? 0 : ((nme.enemyShotHits/(_enemyShotsTotal))*100));
+		 
+		 g.setColor(java.awt.Color.white);
+		 g.setFont(new Font("Verdana", Font.PLAIN, 15));
+		 g.drawString("Enemy Shot Accuracy: " +  df.format(_enemyShotAccuracy) + "%", 10, 20+18);
+		 g.drawString("Shot Accuracy: " +  df.format(_shotAccuracy) + "%", 10, 20);
+
+		 g.drawString("KNN GUN [K:  " +  MAX_SELECTED_SITUATIONS + ", BANDWIDTH: " + KERNEL_DENSITY_BANDWIDTH + "]", 250, 20);
+		 
+ 
+    }
+	
+	public void onKeyPressed(KeyEvent e) {
+		switch (e.getKeyCode()) {
+		case VK_UP:
+		case VK_W:
+			KERNEL_DENSITY_BANDWIDTH++;
+			break;
+
+		case VK_DOWN:
+		case VK_S:
+			KERNEL_DENSITY_BANDWIDTH--;
+			break;
+			}
+		}
+ 
+	/*
+	 * This class is the data we will need to use for our targeting waves.
+	 */
+	public static class GunWave{
+		double bulletVelocity;
+		Point2D.Double fireLocation;
+		int velSeg;
+		double absBearing;
+		double fireTime;
+	}
+	
+	// See Chalk bot source for calculations
+	public static class Situation{
+		
+		// How we will segment the tree
+		public static final int LAT_VEL = 0;
+		public static final int ACCEL = 1;
+		public static final int VEL_CHNG = 2;
+		public static final int DIST = 3;
+		public static final int WALL_F = 4;
+		public static final int WALL_B = 5;
+		public static final int ADV_VEL = 6;
+	
+		public long Time;
+		public double RX;
+		public double RY;
+		public double EnemyHeading;
+		public double Bearing;
+		public double BearingRadians;
+		public double NormalizedDistance;
+		public double Distance;
+		public double DistanceDelta;
+		public double LateralVelocity;
+		public double AdvancingVelocity;
+		public double Acceleration;
+		public double Velocity;
+		public double SinceVelocityChange;
+		public double WallTriesForward;
+		public double WallTriesBack;
+		public double Direction;
+		public double BulletVelocity;
+		public double MaxAngle;
+		public boolean Set = false;
+		public boolean DeltaSet = false;
+		
+		public void setBulletVelocity(double shotPower)
+		{
+			BulletVelocity = 20d - 3d * shotPower;
+			MaxAngle = Math.asin(8d / BulletVelocity) * Direction;
+		}
+		
+		public double getDistance(long time) { return (double)(time - Time) * BulletVelocity; }
+		
+		public boolean setBearing(double x, double y) 
+		{
+			boolean val = Set;
+			if (!Set) { register(x,y); }
+			if (!DeltaSet)
+			{
+				DistanceDelta = Math.sqrt(Math.pow(RX-x,2)+Math.pow(RY-y,2)) - Distance;
+				DeltaSet = true;
+			}
+			return val;
+		}
+		
+		public void registerHit(double x, double y) { register(x,y); }
+		
+		private void register(double x, double y)
+		{
+			BearingRadians = Utils.normalRelativeAngle(Math.atan2(x-RX,y-RY) - EnemyHeading);
+			Bearing = (BearingRadians / MaxAngle) * 100d;
+			Set = true;
+		}
+		
+		public double[] getPoint()
+		{
+			return new double[] { LateralVelocity, Acceleration, NormalizedDistance, WallTriesForward, WallTriesBack, AdvancingVelocity };
+		}
+		
+		public double getProperty(int index){
+			switch(index){
+				case LAT_VEL:
+					return LateralVelocity;
+				case ACCEL:
+					return Acceleration;
+				case VEL_CHNG:
+					return SinceVelocityChange;
+				case DIST:
+					return NormalizedDistance;
+				case WALL_F:
+					return WallTriesForward;
+				case WALL_B:
+					return WallTriesBack;
+				case ADV_VEL:
+					return AdvancingVelocity;
+			}
+			return 0.0d;
+		}
+	}
+	
+public class ManhattanDistanceFunction implements DistanceFunction {
+    @Override
+    public double distance(double[] p1, double[] p2) {
+        double d = 0;
+
+        for (int i = 0; i < p1.length; i++) {
+			
+			double diff = Math.abs(p1[i] - p2[i]);
+			
+			if ((diff > 100.0/800d) && i == 3) // normalized distance
+				d += 100000; // poison it
+			else
+			
+				d += diff * SITUATION_WEIGHTS[i];
+
+        }
+
+        return d;
+    }
+
+    @Override
+    public double distanceToRect(double[] point, double[] min, double[] max) {
+        double d = 0;
+
+        for (int i = 0; i < point.length; i++) {
+            double diff = 0;
+            if (point[i] > max[i]) {
+                diff = Math.abs(point[i] - max[i]);
+            }
+            else if (point[i] < min[i]) {
+                diff = Math.abs(point[i] - min[i]);
+            }
+            d += diff*SITUATION_WEIGHTS[i];
+        }
+
+        return d;
+    }
+} 
+	
+	public static class Enemy{
+		
+		public Point2D.Double location;
+		public String name;
+        public double energy;
+		public double distance;
+		public double bearing;
+		public double bearingRadians;
+		public double heading;
+		public double headingRadians;
+		public double velocity;
+		public double enemyShotHits = 0;
+		public double enemyShotMisses = 0;
+		
+		public Enemy()
+		{
+			energy = 100;
+		}
+		
+		public static double getLastBulletPower (ArrayList<EnemyWave> waves)
+		{
+			if (waves.size() == 0)
+				return FIRE_POWER;	
+		
+			return waves.get(waves.size()-1).bulletPower;	
+		}
+		
+	}
+}
