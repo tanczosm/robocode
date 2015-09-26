@@ -19,9 +19,6 @@ public class V extends AdvancedRobot {
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
-        double absoluteBearing = getHeading() + e.getBearing();
-        double bearingFromGun = normalRelativeAngleDegrees(absoluteBearing - getGunHeading());
-
-        setTurnGunRight(bearingFromGun);
+        setTurnGunRight(normalRelativeAngleDegrees(getHeading() + e.getBearing() - getGunHeading()));
     }
 }
