@@ -34,9 +34,8 @@ public class Enemy {
         lastBulletPower = 2;
     }
 
-    public double getRatingPercent()
-    {
-        return (double)(enemyShotHits)/(enemyShotHits+enemyShotMisses);
+    public double getRatingPercent() {
+        return (double) (enemyShotHits) / (enemyShotHits + enemyShotMisses);
     }
 
     /*

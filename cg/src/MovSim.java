@@ -2,6 +2,7 @@ package cg;
 
 import java.awt.geom.Point2D;
 import java.util.Vector;
+
 import robocode.util.*;
 import robocode.*;
 
@@ -17,10 +18,15 @@ public class MovSim {
     public double defaultMaxVelocity = 8.0;
 
 
-    public MovSim() {};
+    public MovSim() {
+    }
+
+    ;
 
 
-    public MovSimStat[] futurePos(int steps, AdvancedRobot b) { return futurePos(steps, b, defaultMaxVelocity, defaultMaxTurnRate); }
+    public MovSimStat[] futurePos(int steps, AdvancedRobot b) {
+        return futurePos(steps, b, defaultMaxVelocity, defaultMaxTurnRate);
+    }
 
     public MovSimStat[] futurePos(int steps, AdvancedRobot b, double maxVel, double maxTurnRate) {
         return futurePos(steps, b.getX(), b.getY(), b.getVelocity(), maxVel, b.getHeadingRadians(), b.getDistanceRemaining(), b.getTurnRemainingRadians(), maxTurnRate, b.getBattleFieldWidth(), b.getBattleFieldHeight());
@@ -35,19 +41,31 @@ public class MovSim {
         double moveDirection;
 
         maxTurnRate = Math.toRadians(maxTurnRate);
-        if (distanceRemaining == 0) moveDirection = 0; else if (distanceRemaining < 0.0) moveDirection = -1; else moveDirection = 1;
+        if (distanceRemaining == 0) moveDirection = 0;
+        else if (distanceRemaining < 0.0) moveDirection = -1;
+        else moveDirection = 1;
 
         //heading, accel, velocity, distance
-        for (int i=0; i<steps; i++) {
+        for (int i = 0; i < steps; i++) {
             //heading
             double lastHeading = heading;
             double turnRate = Math.min(maxTurnRate, ((0.4 + 0.6 * (1.0 - (Math.abs(velocity) / systemMaxVelocity))) * systemMaxTurnRate));
             if (angleToTurn > 0.0) {
-                if (angleToTurn < turnRate) { heading += angleToTurn; angleToTurn = 0.0; }
-                else { heading += turnRate; angleToTurn -= turnRate; }
+                if (angleToTurn < turnRate) {
+                    heading += angleToTurn;
+                    angleToTurn = 0.0;
+                } else {
+                    heading += turnRate;
+                    angleToTurn -= turnRate;
+                }
             } else if (angleToTurn < 0.0) {
-                if (angleToTurn > -turnRate) { heading += angleToTurn; angleToTurn = 0.0; }
-                else { heading -= turnRate;	angleToTurn += turnRate; }
+                if (angleToTurn > -turnRate) {
+                    heading += angleToTurn;
+                    angleToTurn = 0.0;
+                } else {
+                    heading -= turnRate;
+                    angleToTurn += turnRate;
+                }
             }
             heading = Utils.normalAbsoluteAngle(heading);
             //movement
@@ -64,7 +82,7 @@ public class MovSim {
                     if (moveDirection == 1 && distanceRemaining < 0.0) desiredDistanceRemaining = 0.0;
                     else if (moveDirection == -1 && distanceRemaining > 1.0) desiredDistanceRemaining = 0.0;
                 }
-                double slowDownVelocity	= (double) (int) (maxBraking / 2.0 * ((Math.sqrt(4.0 * Math.abs(desiredDistanceRemaining)+ 1.0)) - 1.0));
+                double slowDownVelocity = (double) (int) (maxBraking / 2.0 * ((Math.sqrt(4.0 * Math.abs(desiredDistanceRemaining) + 1.0)) - 1.0));
                 if (moveDirection == -1) slowDownVelocity = -slowDownVelocity;
                 if (!slowingDown) {
                     if (moveDirection == 1) {
@@ -74,11 +92,12 @@ public class MovSim {
                     } else if (moveDirection == -1) {
                         if (velocity > 0.0) acceleration = -maxBraking;
                         else acceleration = -maxAcceleration;
-                        if (velocity + acceleration < slowDownVelocity)	slowingDown = true;
+                        if (velocity + acceleration < slowDownVelocity) slowingDown = true;
                     }
                 }
                 if (slowingDown) {
-                    if (distanceRemaining != 0.0 && Math.abs(velocity) <= maxBraking && Math.abs(distanceRemaining) <= maxBraking) slowDownVelocity = distanceRemaining;
+                    if (distanceRemaining != 0.0 && Math.abs(velocity) <= maxBraking && Math.abs(distanceRemaining) <= maxBraking)
+                        slowDownVelocity = distanceRemaining;
                     double perfectAccel = slowDownVelocity - velocity;
                     if (perfectAccel > maxBraking) perfectAccel = maxBraking;
                     else if (perfectAccel < -maxBraking) perfectAccel = -maxBraking;
@@ -86,26 +105,33 @@ public class MovSim {
                 }
                 if (velocity > maxVelocity || velocity < -maxVelocity) acceleration = 0.0;
                 velocity += acceleration;
-                if (velocity > maxVelocity)	velocity -= Math.min(maxBraking, velocity - maxVelocity);
+                if (velocity > maxVelocity) velocity -= Math.min(maxBraking, velocity - maxVelocity);
                 if (velocity < -maxVelocity) velocity += Math.min(maxBraking, -velocity - maxVelocity);
-                double dx = velocity * Math.sin(heading); double dy = velocity * Math.cos(heading);
-                x += dx; y += dy;
+                double dx = velocity * Math.sin(heading);
+                double dy = velocity * Math.cos(heading);
+                x += dx;
+                y += dy;
                 //boolean updateBounds = false;
                 //if (dx != 0.0 || dy != 0.0) updateBounds = true;
-                if (slowingDown && velocity == 0.0) { distanceRemaining = 0.0; moveDirection = 0; slowingDown = false; acceleration = 0.0; }
+                if (slowingDown && velocity == 0.0) {
+                    distanceRemaining = 0.0;
+                    moveDirection = 0;
+                    slowingDown = false;
+                    acceleration = 0.0;
+                }
                 //if (updateBounds) updateBoundingBox();
                 distanceRemaining -= velocity;
-                if (x<18 || y<18 || x>battleFieldW-18 || y>battleFieldH-18) {
+                if (x < 18 || y < 18 || x > battleFieldW - 18 || y > battleFieldH - 18) {
                     distanceRemaining = 0;
                     angleToTurn = 0;
                     velocity = 0;
                     moveDirection = 0;
-                    x = Math.max(18,Math.min(battleFieldW-18,x));
-                    y = Math.max(18,Math.min(battleFieldH-18,y));
+                    x = Math.max(18, Math.min(battleFieldW - 18, x));
+                    y = Math.max(18, Math.min(battleFieldH - 18, y));
                 }
             }
             //add position
-            pos[i] = new MovSimStat(x,y,velocity,heading,Utils.normalRelativeAngle(heading-lastHeading));
+            pos[i] = new MovSimStat(x, y, velocity, heading, Utils.normalRelativeAngle(heading - lastHeading));
         }
         return pos;
     }
