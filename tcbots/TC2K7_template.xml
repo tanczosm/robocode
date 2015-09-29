@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LEAGUE battlefield_height="600" battlefield_width="800" 
+focused_competitor_id="BotName Version" gun_cooling_rate="0.1" inactivity_time="450" opponents_per_grouping="2" rounds_per_grouping="500" version="1.0">
+<COMPETITOR classname="Package.BotName" id="BotName Version" use_latest="false" version="Version"/>
+<COMPETITOR classname="abc.Shadow" id="Shadow 3.66dTC" use_latest="false" version="3.66dTC"/>
+<COMPETITOR classname="davidalves.micro.DuelistMicro" id="DuelistMicro 2.0TC" use_latest="false" version="2.0TC"/>
+<COMPETITOR classname="gh.GrubbmGrb" id="GrubbmGrb 1.2.4TC" use_latest="false" version="1.2.4TC"/>
+<COMPETITOR classname="jam.RaikoMX" id="RaikoMX 0.32TC" use_latest="false" version="0.32TC"/>
+<COMPETITOR classname="jam.micro.RaikoMicro" id="RaikoMicro 1.44TC" use_latest="false" version="1.44TC"/>
+<COMPETITOR classname="kc.Fortune" id="Fortune 1.0" use_latest="false" version="1.0"/>
+<COMPETITOR classname="kc.serpent.WaveSerpent" id="WaveSerpent 1.221TC" use_latest="false" version="1.221TC"/>
+<COMPETITOR classname="pez.rumble.CassiusClay" id="CassiusClay 2pi.08TC" use_latest="false" version="2pi.08TC"/>
+<COMPETITOR classname="simonton.micro.WeeklongObsession" id="WeeklongObsession 1.5TC" use_latest="false" version="1.5TC"/>
+<COMPETITOR classname="simonton.mini.WeeksOnEnd" id="WeeksOnEnd 1.10bTC" use_latest="false" version="1.10bTC"/>
+</LEAGUE>
