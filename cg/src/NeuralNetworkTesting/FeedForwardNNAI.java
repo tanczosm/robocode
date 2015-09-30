@@ -1,4 +1,5 @@
-import org.encog.ml.data.MLDataSet;
+package NeuralNetworkTesting;
+
 import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
@@ -7,6 +8,37 @@ import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.util.simple.EncogUtility;
+
+class LoggingActor extends Actor {
+    private Actor actor;
+    private BasicMLDataSet dataset;
+
+    public LoggingActor(Actor actor) {
+        this.actor = actor;
+        this.dataset = new BasicMLDataSet();
+    }
+
+    protected int selectMove(Game g, Player plr) {
+        double[] vars = g.getGrid().generateMLVars(plr);
+
+        int move = actor.selectMove(g, plr);
+
+        double[] output = new double[9];
+        output[move] = 1.0;
+
+        MLDataPair pair = BasicMLDataPair.createPair(vars.length, 1);
+
+        pair.setIdealArray(output);
+        pair.setInputArray(vars);
+        dataset.add(pair);
+
+        return move;
+    }
+
+    public BasicMLDataSet getDataset() {
+        return dataset;
+    }
+}
 
 class NNBuilder {
     private BasicNetwork method;
@@ -33,16 +65,16 @@ class NNBuilder {
         Player p2 = new Player(new RandomAI());
 
         // play 100k games as the first to place
-        for(int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 100000; i++) {
             Game g = new Game(p1, p2);
-            while(!g.isGameOver()) {
+            while (!g.isGameOver()) {
                 g.playTurn();
             }
         }
         // play 100k games as second to place.
-        for(int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 100000; i++) {
             Game g = new Game(p2, p1);
-            while(!g.isGameOver()) {
+            while (!g.isGameOver()) {
                 g.playTurn();
             }
         }
@@ -90,8 +122,8 @@ public class FeedForwardNNAI extends Actor {
 
         Grid grid = g.getGrid();
 
-        for(int i = 0; i < data.length; i++) {
-            if(!grid.getSquare(i).isOccupied()) {
+        for (int i = 0; i < data.length; i++) {
+            if (!grid.getSquare(i).isOccupied()) {
                 res[i] = data[i];
             }
         }
@@ -99,8 +131,8 @@ public class FeedForwardNNAI extends Actor {
         int maxima = 0;
         double val = 0.0;
 
-        for(int i = 0; i < res.length; i++) {
-            if(res[i] > val) {
+        for (int i = 0; i < res.length; i++) {
+            if (res[i] > val) {
                 maxima = i;
                 val = res[i];
             }
