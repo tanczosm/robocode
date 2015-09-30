@@ -28,7 +28,7 @@ public class CTUtils {
 
 
     public static int bulletTicks(double distance, double power) {
-        return (int)Math.ceil(distance / (20 - (3*power)));
+        return (int) Math.ceil(distance / (20 - (3 * power)));
     }
 
     public static double bulletDamage(double power) {
@@ -48,7 +48,7 @@ public class CTUtils {
     }
 
     public static double botWidthAimAngle(double distance) {
-        return Math.abs(18.0/distance);
+        return Math.abs(18.0 / distance);
     }
 
     public static Point2D.Double nextLocation(AdvancedRobot robot) {
@@ -125,12 +125,15 @@ public class CTUtils {
             Point2D.Double targetLocation, double absBearingRadians,
             double enemyVelocity, double maxVelocity, double enemyHeadingRadians,
             double attackAngle, boolean clockwise, long currentTime,
-            Rectangle2D.Double battleField,	double bfWidth, double bfHeight,
+            Rectangle2D.Double battleField, double bfWidth, double bfHeight,
             double wallStick, boolean ignoreWallHits) {
 
         int orientation;
-        if (clockwise) { orientation = 1; }
-        else { orientation = -1; }
+        if (clockwise) {
+            orientation = 1;
+        } else {
+            orientation = -1;
+        }
 
         double goAngleRadians = Utils.normalRelativeAngle(
                 absBearingRadians + (orientation * ((Math.PI / 2) + attackAngle)));
@@ -167,8 +170,11 @@ public class CTUtils {
         double futureDistance;
 
         if (Math.abs(futureTurn) > (Math.PI / 2)) {
-            if (futureTurn < 0) { futureTurn = Math.PI + futureTurn; }
-            else { futureTurn = -1 * (Math.PI - futureTurn); }
+            if (futureTurn < 0) {
+                futureTurn = Math.PI + futureTurn;
+            } else {
+                futureTurn = -1 * (Math.PI - futureTurn);
+            }
 
             futureDistance = -1000;
         } else {
@@ -201,15 +207,15 @@ public class CTUtils {
             powerTen *= 10;
         }
 
-        return ((double)Math.round(d * powerTen)) / powerTen;
+        return ((double) Math.round(d * powerTen)) / powerTen;
     }
 
     /**
      * wallSmoothing: do some Voodoo and wall smooth in a very efficiently.
-     *   - ...in terms of CPU cycles, not amount of code.
-     *   - used to be iterative, which was a lot simpler and more readable,
-     *     but far too slow with how much it was called during precise
-     *     prediction.
+     * - ...in terms of CPU cycles, not amount of code.
+     * - used to be iterative, which was a lot simpler and more readable,
+     * but far too slow with how much it was called during precise
+     * prediction.
      */
     public static double wallSmoothing(Rectangle2D.Double field, double bfWidth,
                                        double bfHeight, Point2D.Double startLocation, double startAngleRadians,
@@ -246,8 +252,8 @@ public class CTUtils {
             return startAngleRadians;
         }
 
-        double testX = startLocation.x + (Math.sin(angle)*wallStick);
-        double testY = startLocation.y + (Math.cos(angle)*wallStick);
+        double testX = startLocation.x + (Math.sin(angle) * wallStick);
+        double testY = startLocation.y + (Math.cos(angle) * wallStick);
         double testDistanceX = Math.min(testX - 18, bfWidth - testX - 18);
         double testDistanceY = Math.min(testY - 18, bfHeight - testY - 18);
 
@@ -255,22 +261,24 @@ public class CTUtils {
         int g = 0;
 
         while (!field.contains(testX, testY) && g++ < 25) {
-            if (angle < 0) { angle += (2*Math.PI); }
+            if (angle < 0) {
+                angle += (2 * Math.PI);
+            }
             if (testDistanceY < 0 && testDistanceY < testDistanceX) {
                 // wall smooth North or South wall
-                angle = ((int)((angle + (Math.PI/2)) / Math.PI)) * Math.PI;
+                angle = ((int) ((angle + (Math.PI / 2)) / Math.PI)) * Math.PI;
                 adjacent = Math.abs(wallDistanceY);
             } else if (testDistanceX < 0 && testDistanceX <= testDistanceY) {
                 // wall smooth East or West wall
-                angle = (((int)(angle / Math.PI)) * Math.PI) + (Math.PI/2);
+                angle = (((int) (angle / Math.PI)) * Math.PI) + (Math.PI / 2);
                 adjacent = Math.abs(wallDistanceX);
             }
 
             angle += orientation *
-                    (Math.abs(Math.acos(adjacent/wallStick)) + 0.0005);
+                    (Math.abs(Math.acos(adjacent / wallStick)) + 0.0005);
 
-            testX = startLocation.x + (Math.sin(angle)*wallStick);
-            testY = startLocation.y + (Math.cos(angle)*wallStick);
+            testX = startLocation.x + (Math.sin(angle) * wallStick);
+            testY = startLocation.y + (Math.cos(angle) * wallStick);
             testDistanceX = Math.min(testX - 18, bfWidth - testX - 18);
             testDistanceY = Math.min(testY - 18, bfHeight - testY - 18);
         }
@@ -294,8 +302,7 @@ public class CTUtils {
         return Math.asin(8.0 / velocity);
     }
 
-    public static double clamp (double value, double min, double max)
-    {
+    public static double clamp(double value, double min, double max) {
         return Math.min(Math.max(value, min), max);
     }
 

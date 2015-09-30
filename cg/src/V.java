@@ -53,8 +53,7 @@ public class V extends AdvancedRobot {
 
     public void onScannedRobot(ScannedRobotEvent e) {
 
-        if (_radarScanner._lastScan == null)
-        {
+        if (_radarScanner._lastScan == null) {
             _radarScanner._lastScan = e;
             return;
         }
@@ -85,9 +84,7 @@ public class V extends AdvancedRobot {
             if (bulletPower >= 0 && bulletPower < 3.01)
                 _radarScanner.nme.lastShotTime = getTime();
 
-        }
-        catch (ArrayIndexOutOfBoundsException em)
-        {
+        } catch (ArrayIndexOutOfBoundsException em) {
             System.out.println(em.getMessage());
         }
 

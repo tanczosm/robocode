@@ -27,9 +27,9 @@ public class RadarScanner {
     private ArrayList<EnemySituation> _enemyNodeQueue;
 
     private ArrayList<BaseGun> _registeredGuns;
-//    public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
+    //    public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
     public final static int wallwidth = 18; // 18
-    public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(wallwidth, wallwidth, 800-wallwidth*2, 600-wallwidth*2);
+    public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(wallwidth, wallwidth, 800 - wallwidth * 2, 600 - wallwidth * 2);
 
 
     public static double FIRE_POWER = 2;
@@ -53,8 +53,7 @@ public class RadarScanner {
     public double _lastLatVel = 0;
 
 
-    public RadarScanner ()
-    {
+    public RadarScanner() {
         _surfDirections = new ArrayList<Integer>();
         _surfAbsBearings = new ArrayList<Double>();
         _nodeQueue = new ArrayList<Situation>(100);
@@ -63,13 +62,11 @@ public class RadarScanner {
 
     }
 
-    public void onBattleEnded()
-    {
+    public void onBattleEnded() {
         fileWriter.close();
     }
 
-    public void writeLogLine (Situation s)
-    {
+    public void writeLogLine(Situation s) {
         // { LateralVelocity, Acceleration, NormalizedDistance, WallTriesForward, WallTriesBack, AdvancingVelocity };
 
         double[] point = s.getPoint();
@@ -78,8 +75,7 @@ public class RadarScanner {
         output += s.GuessFactor + ",";
         output += s.GuessFactorChosen;
 
-        for (int i = 0; i < point.length; i++)
-        {
+        for (int i = 0; i < point.length; i++) {
             if (output.length() != 0)
                 output += ",";
 
@@ -94,8 +90,7 @@ public class RadarScanner {
 
     }
 
-    public void setRobot (AdvancedRobot robot)
-    {
+    public void setRobot(AdvancedRobot robot) {
         _robot = robot;
 
         if (fileWriter == null) {
@@ -107,18 +102,15 @@ public class RadarScanner {
         }
     }
 
-    public void registerGun (BaseGun gun)
-    {
+    public void registerGun(BaseGun gun) {
         _registeredGuns.add(gun);
     }
 
-    public void onRoundEnded(RoundEndedEvent event)
-    {
+    public void onRoundEnded(RoundEndedEvent event) {
         nme.energy = 100;
     }
 
-    public Situation processScanEvent (ScannedRobotEvent e, boolean turnRadar)
-    {
+    public Situation processScanEvent(ScannedRobotEvent e, boolean turnRadar) {
         if (_lastScan == null) {
             _lastScan = e;
             return null;
@@ -216,8 +208,7 @@ public class RadarScanner {
 
         _nodeQueue.add(scan);
 
-        for (BaseGun gun : _registeredGuns)
-        {
+        for (BaseGun gun : _registeredGuns) {
             gun.checkVirtualBullets(time, nme.enemyBox);
         }
 
@@ -235,13 +226,11 @@ public class RadarScanner {
 
                     if (LOG_TO_FILE) {
                         writeLogLine(s);
-                    }
-                    else
+                    } else
                         System.out.println("UNABLE TO WRITE LINE");
 
                     //System.out.println("Added scan point");
-                    for (BaseGun gun : _registeredGuns)
-                    {
+                    for (BaseGun gun : _registeredGuns) {
                         gun.addSituation(s);
                     }
                 }
@@ -250,8 +239,7 @@ public class RadarScanner {
                     _nodeQueue.remove(i);
 
                     // remove scan from gun
-                    for (BaseGun gun : _registeredGuns)
-                    {
+                    for (BaseGun gun : _registeredGuns) {
                         gun.removePassed(s);
                     }
                 }
@@ -259,7 +247,7 @@ public class RadarScanner {
         }
 
 		/*
-		MaxHeap<Situation> similarSituations = null;
+        MaxHeap<Situation> similarSituations = null;
 		if (situations.size() > 0)
 		{
 			similarSituations = situations.findNearestNeighbors(scan.getPoint(), 20, distanceFunction);
@@ -281,8 +269,6 @@ public class RadarScanner {
         // RESPONSIBILITY OF RadarScanner should end here
 
 
-
-
         // gun code would go here...
 
         // SNIPPED!   KNN Gun code
@@ -293,8 +279,7 @@ public class RadarScanner {
         return scan;
     }
 
-    public void postProcessScanEvent (ScannedRobotEvent e)
-    {
+    public void postProcessScanEvent(ScannedRobotEvent e) {
         double lateralVelocity = _robot.getVelocity() * Math.sin(e.getBearingRadians()); // Player's lateral velocity
 
         _lastLocation = _myLocation;
@@ -348,7 +333,6 @@ public class RadarScanner {
 
         return wallTries;
     }
-
 
 
 }

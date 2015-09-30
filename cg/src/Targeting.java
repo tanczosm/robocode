@@ -13,8 +13,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 
-public class Targeting
-{
+public class Targeting {
 
     private AdvancedRobot _robot;
     private RadarScanner _radarScanner;
@@ -35,8 +34,7 @@ public class Targeting
     public int totalSwitches = 0;
 
 
-    public Targeting (AdvancedRobot robot, RadarScanner radarScanner)
-    {
+    public Targeting(AdvancedRobot robot, RadarScanner radarScanner) {
         this._robot = robot;
         this._radarScanner = radarScanner;
 
@@ -49,28 +47,24 @@ public class Targeting
         guns.add(new GFGun(_robot, _radarScanner));
 
         // Next let's make sure the radar scanner knows to update all of our guns
-        for (BaseGun gun : guns)
-        {
+        for (BaseGun gun : guns) {
             this._radarScanner.registerGun(gun);
         }
 
         _currentGun = guns.get(1);
     }
 
-    public void setBattleRules (BattleRules battleRules)
-    {
+    public void setBattleRules(BattleRules battleRules) {
         this._battleRules = battleRules;
     }
 
-    public void selectGun ()
-    {
+    public void selectGun() {
 
         _currentGun = guns.get(1);
 
     }
 
-    public void process (Situation s)
-    {
+    public void process(Situation s) {
         if (_lastSituation == null) {
             _lastSituation = s;
 
@@ -87,7 +81,7 @@ public class Targeting
         MovSimStat next = CTUtils.nextLocationFull(_robot);
         enemyHeading = next.h + _radarScanner.nme.bearingRadians;
 
-        System.out.println("Old enemyHeading: " + (_robot.getHeadingRadians()+_radarScanner.nme.bearingRadians) + ", New heading: " + enemyHeading);
+        System.out.println("Old enemyHeading: " + (_robot.getHeadingRadians() + _radarScanner.nme.bearingRadians) + ", New heading: " + enemyHeading);
 
         //double bearing = _lastBearing; //(s == null ? (_lastBearing == Double.POSITIVE_INFINITY ? _currentGun.projectBearing(_lastSituation, x, y, enemyHeading) : _lastBearing) : _currentGun.projectBearing(s, x, y, enemyHeading));
 
@@ -97,9 +91,9 @@ public class Targeting
         double bearing = _currentGun.projectBearing(s, next.x, next.y, enemyHeading);
 
 
-        Point2D.Double target = CTUtils.project(_radarScanner._myLocation, Utils.normalRelativeAngle(enemyHeading+bearing), 1000);
+        Point2D.Double target = CTUtils.project(_radarScanner._myLocation, Utils.normalRelativeAngle(enemyHeading + bearing), 1000);
         Graphics2D g = _robot.getGraphics();
-        g.drawLine((int)_robot.getX(), (int)_robot.getY(), (int)target.getX(), (int)target.getY());
+        g.drawLine((int) _robot.getX(), (int) _robot.getY(), (int) target.getX(), (int) target.getY());
 
         /*
         double gunTurnRate = Rules.GUN_TURN_RATE_RADIANS;
@@ -114,16 +108,16 @@ public class Targeting
 
         selectGun();
 
-        if(RadarScanner.FIRE_POWER > 0 && _robot.getGunHeat() / _coolingRate < 2d) {
+        if (RadarScanner.FIRE_POWER > 0 && _robot.getGunHeat() / _coolingRate < 2d) {
 
-                // Rotate gun according to bearing
-            if(bearing < Double.MAX_VALUE/* && distance > 70d*/){
+            // Rotate gun according to bearing
+            if (bearing < Double.MAX_VALUE/* && distance > 70d*/) {
                 _robot.setTurnGunRightRadians(Utils.normalRelativeAngle(enemyHeading - gunHeading + bearing));
             }
 
             // Check to see if gun finished rotating and we can fire
             _aiming = true;
-            if(bearing < Double.MAX_VALUE
+            if (bearing < Double.MAX_VALUE
                     && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(12d / _radarScanner.nme.distance) || distance < 70d)
                     ) {
                 //s.IsRealBullet = true;
@@ -134,15 +128,15 @@ public class Targeting
                     _aiming = false;
                     _shotsFired++;
                     reportAccuracy();
-    //                bearing = b.getHeadingRadians();
-    //                System.out.println("bearing: " + bearing + ", enemyHeading: " + enemyHeading + ", Bullet Heading: " + b.getHeadingRadians());
+                    //                bearing = b.getHeadingRadians();
+                    //                System.out.println("bearing: " + bearing + ", enemyHeading: " + enemyHeading + ", Bullet Heading: " + b.getHeadingRadians());
 
                     for (BaseGun gun : guns) {
                         if (gun != _currentGun) {
                             double altBearing = gun.projectBearing(s, next.x, next.y, enemyHeading);
                             gun.takeVirtualShot(_lastSituation, altBearing);
                         } else {
-                            double rotationError = (enemyHeading-_robot.getGunTurnRemainingRadians());
+                            double rotationError = (enemyHeading - _robot.getGunTurnRemainingRadians());
                             rotationError = 0;
                             gun.takeVirtualShot(_lastSituation, bearing + rotationError);
 
@@ -153,40 +147,34 @@ public class Targeting
                 }
 
 
-
-
             }
 
         }
 
-        if(!_aiming){
+        if (!_aiming) {
             _robot.setTurnGunRightRadians(Utils.normalRelativeAngle(enemyHeading - gunHeading));
         }
 
 
     }
 
-    public void CheckBullets ()
-    {
+    public void CheckBullets() {
         for (BaseGun gun : guns) {
             gun.checkVirtualBullets(_robot.getTime(), _radarScanner.nme.enemyBox);
         }
     }
 
-    public void update()
-    {
+    public void update() {
         for (BaseGun gun : guns) {
             gun.update();
         }
     }
 
-    public void reportAccuracy ()
-    {
+    public void reportAccuracy() {
         NumberFormat formatter = new DecimalFormat("#0.00");
         System.out.print("Current Accuracy: ");
-        for (BaseGun gun : guns)
-        {
-            System.out.print("[" + gun.getName() + "=" + formatter.format(gun.getRatingPercent()*100) + "]" + (_currentGun == gun ? "* " : " "));
+        for (BaseGun gun : guns) {
+            System.out.print("[" + gun.getName() + "=" + formatter.format(gun.getRatingPercent() * 100) + "]" + (_currentGun == gun ? "* " : " "));
         }
         System.out.println();
     }

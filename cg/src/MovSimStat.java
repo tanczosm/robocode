@@ -13,9 +13,12 @@ public class MovSimStat {
     public int direction; // left or right for now
 
     public MovSimStat(double x, double y, double v, double h, double w) {
-        this.x = x; this.y = y; this.v = v; this.h = h; this.w = w;
+        this.x = x;
+        this.y = y;
+        this.v = v;
+        this.h = h;
+        this.w = w;
     }
-
 
 
 }
