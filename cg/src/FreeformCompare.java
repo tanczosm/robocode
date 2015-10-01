@@ -1,7 +1,6 @@
-package NeuralNetworkTesting;
-
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLDataSet;
+import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.ml.train.MLTrain;
 import org.encog.neural.freeform.FreeformNetwork;
@@ -15,9 +14,8 @@ import org.encog.util.Format;
 
 public class FreeformCompare {
 
-    public static final boolean useRPROP = false;
     public static final boolean dualHidden = true;
-    public static final int ITERATIONS = 2;
+    public static final int ITERATIONS = 200000;
 
 
     public static BasicNetwork basicNetwork;
@@ -51,37 +49,40 @@ public class FreeformCompare {
         // create the freeform network
         freeformNetwork = new FreeformNetwork(basicNetwork);
 
+
         // create training data
-        MLDataSet trainingSet = new BasicMLDataSet();
+        double[][] puppy = new double[1][2];
+        double[][] output = new double[1][1];
+        MLDataSet trainingSet = new BasicMLDataSet(puppy, output);
 
         // create two trainers
 
-        MLTrain freeformTrain;
+        FreeformBackPropagation freeformTrain;
 
-        if (useRPROP) {
-            freeformTrain = new FreeformResilientPropagation(freeformNetwork, trainingSet);
-        } else {
-            freeformTrain = new FreeformBackPropagation(freeformNetwork, trainingSet, 0.7, 0.3);
-        }
 
-        MLTrain basicTrain;
+        freeformTrain = new FreeformBackPropagation(freeformNetwork, trainingSet, 0.7, 0.3);
 
-        if (useRPROP) {
-            basicTrain = new ResilientPropagation(basicNetwork, trainingSet);
-        } else {
-            basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
-        }
+        Backpropagation basicTrain;
+
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+
+        freeformTrain.setBatchSize(1);
+        basicTrain.setBatchSize(1);
+
+        trainingSet.
 
         int sample = 0;
 
         // perform both
         for (int i = 1; i <= ITERATIONS; i++) {
-            trainingSet.add(new MLData(XOR_INPUT[sample]), new MLData(XOR_IDEAL[sample]));
+            trainingSet.add(new BasicMLData(XOR_INPUT[sample % XOR_INPUT.length]), new BasicMLData(XOR_IDEAL[sample % XOR_IDEAL.length]));
             freeformTrain.iteration();
             basicTrain.iteration();
             System.out.println("Iteration #" + i + " : "
                     + "Freeform: " + Format.formatPercent(freeformTrain.getError())
                     + ", Basic: " + Format.formatPercent(basicTrain.getError()));
+
+            sample++;
         }
     }
 }
