@@ -15,7 +15,7 @@ import org.encog.util.Format;
 public class FreeformCompare {
 
     public static final boolean dualHidden = true;
-    public static final int ITERATIONS = 200000;
+    public static final int ITERATIONS = 175;
 
 
     public static BasicNetwork basicNetwork;
@@ -49,27 +49,15 @@ public class FreeformCompare {
         // create the freeform network
         freeformNetwork = new FreeformNetwork(basicNetwork);
 
-
         // create training data
-        double[][] puppy = new double[1][2];
-        double[][] output = new double[1][1];
-        MLDataSet trainingSet = new BasicMLDataSet(puppy, output);
+        MLDataSet trainingSet = new BasicMLDataSet(new double[1][2], new double[1][1]);
 
         // create two trainers
-
-        FreeformBackPropagation freeformTrain;
-
-
-        freeformTrain = new FreeformBackPropagation(freeformNetwork, trainingSet, 0.7, 0.3);
-
-        Backpropagation basicTrain;
-
-        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        FreeformBackPropagation freeformTrain = new FreeformBackPropagation(freeformNetwork, trainingSet, 0.7, 0.3);
+        Backpropagation basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
 
         freeformTrain.setBatchSize(1);
         basicTrain.setBatchSize(1);
-
-        trainingSet.
 
         int sample = 0;
 
@@ -81,7 +69,6 @@ public class FreeformCompare {
             System.out.println("Iteration #" + i + " : "
                     + "Freeform: " + Format.formatPercent(freeformTrain.getError())
                     + ", Basic: " + Format.formatPercent(basicTrain.getError()));
-
             sample++;
         }
     }
