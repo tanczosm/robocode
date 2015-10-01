@@ -1,4 +1,5 @@
 import org.encog.engine.network.activation.ActivationSigmoid;
+import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataSet;
@@ -11,10 +12,11 @@ import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 import org.encog.util.Format;
+import java.util.Arrays;
 
 public class FreeformCompare {
 
-    public static final boolean dualHidden = true;
+    public static final boolean dualHidden = false;
     public static final int ITERATIONS = 200000;
 
 
@@ -69,18 +71,28 @@ public class FreeformCompare {
         freeformTrain.setBatchSize(1);
         basicTrain.setBatchSize(1);
 
-        trainingSet.
 
         int sample = 0;
 
         // perform both
         for (int i = 1; i <= ITERATIONS; i++) {
+            //if (sample < XOR_INPUT.length)
             trainingSet.add(new BasicMLData(XOR_INPUT[sample % XOR_INPUT.length]), new BasicMLData(XOR_IDEAL[sample % XOR_IDEAL.length]));
+
             freeformTrain.iteration();
             basicTrain.iteration();
             System.out.println("Iteration #" + i + " : "
                     + "Freeform: " + Format.formatPercent(freeformTrain.getError())
                     + ", Basic: " + Format.formatPercent(basicTrain.getError()));
+
+            BasicMLData inp = new BasicMLData(XOR_INPUT[2]);
+
+            System.out.println("Record count: " + trainingSet.getRecordCount());
+
+            System.out.println(Arrays.toString(basicNetwork.compute(inp).getData()));
+            System.out.println(Arrays.toString(freeformNetwork.compute(inp).getData()));
+
+            //System.out.println(basicNetwork.winner(inp));
 
             sample++;
         }
