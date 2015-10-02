@@ -71,5 +71,6 @@ public class FreeformCompare {
                     + ", Basic: " + Format.formatPercent(basicTrain.getError()));
             sample++;
         }
+        // basicNetwork.compute(trainingSet);
     }
 }
