@@ -81,8 +81,8 @@ public class FreeformCompare {
             System.out.println(Arrays.toString(basicNetwork.compute(inp).getData()));
             System.out.println(Arrays.toString(freeformNetwork.compute(inp).getData()));
 
-            //System.out.println(basicNetwork.winner(inp));
             sample++;
+            System.out.println(basicNetwork.compute(inp));
         }
     }
 }
