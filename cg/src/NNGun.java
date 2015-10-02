@@ -93,7 +93,7 @@ public class NNGun extends BaseGun {
 
         // TODO: USE NEURAL NET TO FIND BETTER GF
 
-
+        newWave.fireIndex = bestGF;
 
         // this should do the opposite of the math in the WaveBullet:
         double guessfactor = (double) (bestGF - GF_ZERO) / (double) GF_ZERO;
