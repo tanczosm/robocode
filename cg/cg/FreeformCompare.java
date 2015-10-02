@@ -1,4 +1,4 @@
-package NeuralNetworkTesting;
+package cg;
 
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLData;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class FreeformCompare {
 
     public static final boolean dualHidden = true;
-    public static final int ITERATIONS = 175;
+    public static final int ITERATIONS = 75;
 
     public static BasicNetwork basicNetwork;
     public static FreeformNetwork freeformNetwork;
@@ -31,10 +31,15 @@ public class FreeformCompare {
     public static double XOR_INPUT[][] = {{0.0, 0.0}, {1.0, 0.0},
             {0.0, 1.0}, {1.0, 1.0}};
 
+    public static double XOR_INPUT2[][] = {{0.0, 1.0}, {0.0, 0.0},
+            {1.0, 1.0}, {1.0, 0.0}};
+
     /**
      * The ideal data necessary for XOR.
      */
     public static double XOR_IDEAL[][] = {{0.0}, {1.0}, {1.0}, {0.0}};
+
+    public static double XOR_IDEAL2[][] = {{1.0}, {0.0}, {0.0}, {1.0}};
 
     public static void main(String[] args) {
 
@@ -69,6 +74,7 @@ public class FreeformCompare {
         for (int i = 1; i <= ITERATIONS; i++) {
             //if (sample < XOR_INPUT.length)
             trainingSet.add(new BasicMLData(XOR_INPUT[sample % XOR_INPUT.length]), new BasicMLData(XOR_IDEAL[sample % XOR_IDEAL.length]));
+            trainingSet.add(new BasicMLData(XOR_INPUT2[sample % XOR_INPUT2.length]), new BasicMLData(XOR_IDEAL2[sample % XOR_IDEAL2.length]));
 
             freeformTrain.iteration();
             basicTrain.iteration();
@@ -80,11 +86,12 @@ public class FreeformCompare {
 
             System.out.println("Record count: " + trainingSet.getRecordCount());
 
-            System.out.println(Arrays.toString(basicNetwork.compute(inp).getData()));
-            System.out.println(Arrays.toString(freeformNetwork.compute(inp).getData()));
+            System.out.println("Basic: " + Arrays.toString(basicNetwork.compute(inp).getData()));
+            System.out.println("Freeform: " + Arrays.toString(freeformNetwork.compute(inp).getData()));
 
             sample++;
-            System.out.println(basicNetwork.compute(inp));
+
+            System.out.println();
         }
     }
 }
