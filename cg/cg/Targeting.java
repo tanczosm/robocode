@@ -82,7 +82,7 @@ public class Targeting {
         MovSimStat next = CTUtils.nextLocationFull(_robot);
         enemyHeading = next.h + _radarScanner.nme.bearingRadians;
 
-        System.out.println("Old enemyHeading: " + (_robot.getHeadingRadians() + _radarScanner.nme.bearingRadians) + ", New heading: " + enemyHeading);
+        //System.out.println("Old enemyHeading: " + (_robot.getHeadingRadians() + _radarScanner.nme.bearingRadians) + ", New heading: " + enemyHeading);
 
         //double bearing = _lastBearing; //(s == null ? (_lastBearing == Double.POSITIVE_INFINITY ? _currentGun.projectBearing(_lastSituation, x, y, enemyHeading) : _lastBearing) : _currentGun.projectBearing(s, x, y, enemyHeading));
 

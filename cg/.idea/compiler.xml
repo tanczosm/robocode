@@ -2,7 +2,7 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <excludeFromCompile>
-      <directory url="file://$PROJECT_DIR$/src/NeuralNetworkTesting" includeSubdirectories="true" />
+      <directory url="file://$PROJECT_DIR$/cg/NeuralNetworkTesting" includeSubdirectories="true" />
     </excludeFromCompile>
     <resourceExtensions />
     <wildcardResourcePatterns>

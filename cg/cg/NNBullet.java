@@ -75,7 +75,7 @@ public class NNBullet {
 
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            outputs = RBFUtils.processDataIntoFeatures(gf, 2.0, centers);
+            outputs = RBFUtils.processDataIntoFeatures(gf, 0.25, centers);
 
             //waveGuessFactors[(int)Math.round((Utils.normalRelativeAngle(absoluteBearing(firePosition, RaikoGun.enemyLocation) - enemyAbsBearing))/bearingDirection + GF_ZERO)]++;
             /*
