@@ -10,21 +10,23 @@ public class NNBullet {
     public double startX, startY, startBearing, power, directAngle, maxEscapeAngle;
     public long fireTime;
     public double direction;
-    public double[] returnSegment;
+    public double[] outputs;
+    public double[] inputs;
     public int fireIndex;
 
     public double lowGF, highGF;
 
     public NNBullet(double x, double y, double bearing, double directAngle, double power,
-                      int direction, long time) {
+                      int direction, long time, double[] inputs) {
         startX = x;
         startY = y;
         startBearing = bearing;
         this.power = power;
         this.directAngle = directAngle;
         this.direction = direction;
+        this.inputs = inputs;
         fireTime = time;
-        returnSegment = null;
+        outputs = null;
         maxEscapeAngle = CTUtils.maxEscapeAngle(CTUtils.bulletVelocity(power));
         fireIndex = GFGun.GF_ZERO;
 
@@ -73,7 +75,7 @@ public class NNBullet {
 
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            returnSegment = RBFUtils.processDataIntoFeatures(gf, 1.0, centers);
+            outputs = RBFUtils.processDataIntoFeatures(gf, 2.0, centers);
 
             //waveGuessFactors[(int)Math.round((Utils.normalRelativeAngle(absoluteBearing(firePosition, RaikoGun.enemyLocation) - enemyAbsBearing))/bearingDirection + GF_ZERO)]++;
             /*

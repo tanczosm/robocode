@@ -45,13 +45,14 @@ public class Targeting {
 
         guns.add(new HotGun(_robot, _radarScanner));
         guns.add(new GFGun(_robot, _radarScanner));
+        guns.add(new NNGun(_robot, _radarScanner));
 
         // Next let's make sure the radar scanner knows to update all of our guns
         for (BaseGun gun : guns) {
             this._radarScanner.registerGun(gun);
         }
 
-        _currentGun = guns.get(1);
+        _currentGun = guns.get(2);
     }
 
     public void setBattleRules(BattleRules battleRules) {
@@ -60,7 +61,7 @@ public class Targeting {
 
     public void selectGun() {
 
-        _currentGun = guns.get(1);
+        _currentGun = guns.get(2);
 
     }
 
