@@ -37,7 +37,21 @@ public class RBFUtils {
         return result;
     }
 
-    /*
+    public static double[] mergeFeatures (double[] first, double[]... rest) {
+        int totalLength = first.length;
+        for (double[] array : rest) {
+            totalLength += array.length;
+        }
+        double[] result = Arrays.copyOf(first, totalLength);
+        int offset = first.length;
+        for (double[] array : rest) {
+            System.arraycopy(array, 0, result, offset, array.length);
+            offset += array.length;
+        }
+        return result;
+    }
+
+        /*
     TESTING CODE
      */
     /*
@@ -52,8 +66,13 @@ public class RBFUtils {
 
         double[] centers = getCenters(min, max, featureCount);
         double[] out = processDataIntoFeatures(data, max, centers);
+        double[] other = {3, 5, 5, 5, 2, 2, 25, 252, 25252}; // Just used to show concatenation of 3 arrays
+
         System.out.println(Arrays.toString(centers));
         System.out.println(Arrays.toString(out));
+
+        // Test the array merge
+        System.out.println(Arrays.toString(mergeFeatures(centers, out, other)));
     }
     */
 }
