@@ -31,6 +31,9 @@ public class NNGun extends BaseGun {
     public BasicNetwork basicNetwork;
     public Backpropagation basicTrain;
 
+    public static final int INPUT_LENGTH = 39;
+    public static final int OUTPUT_LENGTH = 61;
+
     public static final int GF_ZERO = 30; // 23; //15;
     public static final int GF_ONE = 60; //46; //30;
 
@@ -50,15 +53,15 @@ public class NNGun extends BaseGun {
 
         // create the basic network
         basicNetwork = new BasicNetwork();
-        basicNetwork.addLayer(new BasicLayer(null, true, 39));
-        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
-        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, 61));
+        basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
         basicNetwork.getStructure().finalizeStructure();
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
         // create training data
-        MLDataSet trainingSet = new BasicMLDataSet(new double[1][39], new double[1][61]);
+        MLDataSet trainingSet = new BasicMLDataSet(new double[1][INPUT_LENGTH], new double[1][OUTPUT_LENGTH]);
 
         // create two trainers
         basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
@@ -84,6 +87,9 @@ public class NNGun extends BaseGun {
             NNBullet currentWave = (NNBullet) waves.get(i);
 
             if (currentWave.checkHit(ex, ey, _robot.getTime())) {
+
+                if (currentWave.inputs.length != INPUT_LENGTH || currentWave.outputs.length != OUTPUT_LENGTH)
+                    continue;
 
                 if (currentWave.actualHit)
                 {
