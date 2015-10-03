@@ -12,6 +12,7 @@ public class NNBullet {
     public double direction;
     public double[] outputs;
     public double[] inputs;
+    public boolean actualHit = false;
     public int fireIndex;
 
     public double lowGF, highGF;
@@ -76,6 +77,11 @@ public class NNBullet {
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
             outputs = RBFUtils.processDataIntoFeatures(gf, 0.25, centers);
+
+            if (getCurrentLocation((int)currentTime).distance(enemyX, enemyY) < 15)
+            {
+                actualHit = true;
+            }
 
             //waveGuessFactors[(int)Math.round((Utils.normalRelativeAngle(absoluteBearing(firePosition, RaikoGun.enemyLocation) - enemyAbsBearing))/bearingDirection + GF_ZERO)]++;
             /*

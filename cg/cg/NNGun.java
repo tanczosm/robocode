@@ -28,8 +28,8 @@ public class NNGun extends BaseGun {
     private RadarScanner _radarScanner;
 
     // Neural network stuff
-    public static BasicNetwork basicNetwork;
-
+    public BasicNetwork basicNetwork;
+    public Backpropagation basicTrain;
 
     public static final int GF_ZERO = 30; // 23; //15;
     public static final int GF_ONE = 60; //46; //30;
@@ -39,19 +39,31 @@ public class NNGun extends BaseGun {
     private Situation _lastSituation = null;
     int direction = 1;
 
+    private ArrayList<double[]> _hitQueueInputs;
+    private ArrayList<double[]> _hitQueueOutputs;
+
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
         _radarScanner = radarScanner;
+        _hitQueueInputs = new ArrayList<double[]>();
+        _hitQueueOutputs = new ArrayList<double[]>();
 
         // create the basic network
         basicNetwork = new BasicNetwork();
         basicNetwork.addLayer(new BasicLayer(null, true, 39));
-        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 2));
+        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
         basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, 61));
         basicNetwork.getStructure().finalizeStructure();
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
+        // create training data
+        MLDataSet trainingSet = new BasicMLDataSet(new double[1][39], new double[1][61]);
+
+        // create two trainers
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+
+        basicTrain.setBatchSize(1);
 
     }
 
@@ -73,12 +85,35 @@ public class NNGun extends BaseGun {
 
             if (currentWave.checkHit(ex, ey, _robot.getTime())) {
 
+                if (currentWave.actualHit)
+                {
+                    _hitQueueInputs.add(currentWave.inputs);
+                    _hitQueueOutputs.add(currentWave.outputs);
+
+                    if (_hitQueueInputs.size() > 5)
+                    {
+                        _hitQueueOutputs.remove(0);
+                        _hitQueueInputs.remove(0);
+                    }
+                }
                 // Train based on waves.returnSegment
                 // waves.inputs
                 // waves.outputs (2 double arrays for training)
                 System.out.println("INP="+Arrays.toString(currentWave.inputs));
                 System.out.println(Arrays.toString(currentWave.outputs));
 
+                MLDataSet mld = new BasicMLDataSet();
+                mld.add(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs));
+
+
+                for (int k = 0; k < _hitQueueInputs.size(); k++)
+                {
+                    mld.add(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k)));
+                }
+
+
+                basicTrain.setTraining(mld);
+                basicTrain.iteration();
 
                 waves.remove(currentWave);
                 i--;
@@ -133,7 +168,7 @@ public class NNGun extends BaseGun {
         double[] faccel = RBFUtils.processDataIntoFeatures(s.Acceleration, 1.0, RBFUtils.getCenters(0, 1.0, 11));
 
         // Advancing Velocity - Range -8.0 - 8.0, split into 9 features
-        double advancingVelocity = s.AdvancingVelocity * 16d; // +/- 8.0
+        double advancingVelocity = Math.min(16d, Math.max(-16d, s.AdvancingVelocity * 16d)); // +/- 8.0
         double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 16.0, RBFUtils.getCenters(-8d, +8d, 9));
 
         // Need distance delta
@@ -192,14 +227,32 @@ public class NNGun extends BaseGun {
                 direction = 1;
         }
         //w.bearingDirection = (double)direction *Math.asin(8D/newWave.getBulletSpeed())/GF_ZERO;
+        double[] situationInput = getInputForSituation(s);
 
         newWave = new NNBullet(x, y, absBearing, ((Double) _radarScanner._surfAbsBearings.get(0)).doubleValue(), _radarScanner.FIRE_POWER,
-                direction, _robot.getTime(), getInputForSituation(s));
+                direction, _robot.getTime(), situationInput);
 
 
         int bestGF = GF_ZERO;    // initialize it to be in the middle, guessfactor 0.
 
         // TODO: USE NEURAL NET TO FIND BETTER GF
+        System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
+
+        BasicMLData inp = new BasicMLData(situationInput);
+
+        double[] outgf = basicNetwork.compute(inp).getData();
+        System.out.println("Basic: " + Arrays.toString(outgf));
+
+        int maxgf = 31;
+        for (int i = 0; i < outgf.length; i++)
+        {
+           if (outgf[i] > outgf[maxgf])
+           {
+               maxgf = i;
+           }
+        }
+
+        bestGF = maxgf;
 
         newWave.fireIndex = bestGF;
 
