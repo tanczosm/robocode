@@ -1,5 +1,7 @@
 package cg;
 
+import org.encog.ml.data.MLDataPair;
+import org.encog.ml.data.basic.BasicMLDataPair;
 import robocode.AdvancedRobot;
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLData;
@@ -31,7 +33,7 @@ public class NNGun extends BaseGun {
     public BasicNetwork basicNetwork;
     public Backpropagation basicTrain;
 
-    public static final int INPUT_LENGTH = 39;
+    public static final int INPUT_LENGTH = 57;
     public static final int OUTPUT_LENGTH = 61;
 
     public static final int GF_ZERO = 30; // 23; //15;
@@ -88,15 +90,18 @@ public class NNGun extends BaseGun {
 
             if (currentWave.checkHit(ex, ey, _robot.getTime())) {
 
-                if (currentWave.inputs.length != INPUT_LENGTH || currentWave.outputs.length != OUTPUT_LENGTH)
+
+                if (currentWave.inputs.length != INPUT_LENGTH || currentWave.outputs.length != OUTPUT_LENGTH) {
+                    System.out.println("Inputs length mismatch - should be " + currentWave.inputs.length);
                     continue;
+                }
 
                 if (currentWave.actualHit)
                 {
                     _hitQueueInputs.add(currentWave.inputs);
                     _hitQueueOutputs.add(currentWave.outputs);
 
-                    if (_hitQueueInputs.size() > 5)
+                    if (_hitQueueInputs.size() > 15)
                     {
                         _hitQueueOutputs.remove(0);
                         _hitQueueInputs.remove(0);
@@ -108,18 +113,26 @@ public class NNGun extends BaseGun {
                 System.out.println("INP="+Arrays.toString(currentWave.inputs));
                 System.out.println(Arrays.toString(currentWave.outputs));
 
-                MLDataSet mld = new BasicMLDataSet();
-                mld.add(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs));
 
+                ArrayList<MLDataPair> data = new ArrayList<MLDataPair>();
+                data.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
+                //mld.add(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs));
+
+                /*
                 for (int k = 0; k < _hitQueueInputs.size(); k++)
                 {
-                    mld.add(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k)));
+                    data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
                 }
+                */
 
+                MLDataSet mld = new BasicMLDataSet(data);
 
                 basicTrain.setTraining(mld);
                 basicTrain.iteration();
+
+                System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
+
 
                 waves.remove(currentWave);
                 i--;
@@ -178,7 +191,9 @@ public class NNGun extends BaseGun {
         double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 16.0, RBFUtils.getCenters(-8d, +8d, 9));
 
         // Need distance delta
-        // Need SinceVelocityChange
+
+        // SinceVelocityChange - Range 0 - 1, split into 7 features
+        double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.5, RBFUtils.getCenters(0, 1, 7));
 
         // Wall Tries Forward - Range 0.0 - 20.0, split into 7 features
         double[] ffwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesForward*20, 20.0, RBFUtils.getCenters(0, 20, 7));
@@ -186,7 +201,7 @@ public class NNGun extends BaseGun {
         // Wall Tries Backward - Range 0.0 - 20.0, split into 4 features
         double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack*20, 20.0, RBFUtils.getCenters(0, 20, 4));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, ffwalltries, fbwalltries);
+        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fsincevelch, ffwalltries, fbwalltries);
 
         // Situation s already contains normalized data
         /*
@@ -235,6 +250,8 @@ public class NNGun extends BaseGun {
         //w.bearingDirection = (double)direction *Math.asin(8D/newWave.getBulletSpeed())/GF_ZERO;
         double[] situationInput = getInputForSituation(s);
 
+        assert situationInput.length == INPUT_LENGTH : "Situation input length doesn't match";
+
         newWave = new NNBullet(x, y, absBearing, ((Double) _radarScanner._surfAbsBearings.get(0)).doubleValue(), _radarScanner.FIRE_POWER,
                 direction, _robot.getTime(), situationInput);
 
@@ -242,7 +259,7 @@ public class NNGun extends BaseGun {
         int bestGF = GF_ZERO;    // initialize it to be in the middle, guessfactor 0.
 
         // TODO: USE NEURAL NET TO FIND BETTER GF
-        System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
+        //System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
 
         BasicMLData inp = new BasicMLData(situationInput);
 
