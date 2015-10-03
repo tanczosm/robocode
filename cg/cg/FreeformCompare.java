@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class FreeformCompare {
 
     public static final boolean dualHidden = true;
-    public static final int ITERATIONS = 75;
+    public static final int ITERATIONS = 300;
 
     public static BasicNetwork basicNetwork;
     public static FreeformNetwork freeformNetwork;
@@ -34,12 +34,17 @@ public class FreeformCompare {
     public static double XOR_INPUT2[][] = {{0.0, 1.0}, {0.0, 0.0},
             {1.0, 1.0}, {1.0, 0.0}};
 
+    public static double XOR_INPUT3[][] = {{0.5, 0.0}, {0.5, 0.5},
+            {0.0, 0.5}, {0.0, 0.0}};
+
     /**
      * The ideal data necessary for XOR.
      */
     public static double XOR_IDEAL[][] = {{0.0}, {1.0}, {1.0}, {0.0}};
 
     public static double XOR_IDEAL2[][] = {{1.0}, {0.0}, {0.0}, {1.0}};
+
+    public static double XOR_IDEAL3[][] = {{0.5}, {0.0}, {0.5}, {0.0}};
 
     public static void main(String[] args) {
 
@@ -76,21 +81,35 @@ public class FreeformCompare {
             trainingSet.add(new BasicMLData(XOR_INPUT[sample % XOR_INPUT.length]), new BasicMLData(XOR_IDEAL[sample % XOR_IDEAL.length]));
             trainingSet.add(new BasicMLData(XOR_INPUT2[sample % XOR_INPUT2.length]), new BasicMLData(XOR_IDEAL2[sample % XOR_IDEAL2.length]));
 
-            freeformTrain.iteration();
-            basicTrain.iteration();
-            System.out.println("Iteration #" + i + " : "
-                    + "Freeform: " + Format.formatPercent(freeformTrain.getError())
-                    + ", Basic: " + Format.formatPercent(basicTrain.getError()));
+            if (i > 100) {
+                trainingSet.add(new BasicMLData(XOR_INPUT3[sample % XOR_INPUT3.length]), new BasicMLData(XOR_IDEAL3[sample % XOR_IDEAL3.length]));
+                BasicMLData inp = new BasicMLData(XOR_INPUT3[1]);
 
-            BasicMLData inp = new BasicMLData(XOR_INPUT[2]);
+                freeformTrain.iteration();
+                basicTrain.iteration();
+                System.out.println("Iteration #" + i + " : "
+                        + "Basic: " + Format.formatPercent(basicTrain.getError())
+                        + ", Freeform: " + Format.formatPercent(freeformTrain.getError()));
 
-            System.out.println("Record count: " + trainingSet.getRecordCount());
+                System.out.println("Record count: " + trainingSet.getRecordCount());
 
-            System.out.println("Basic: " + Arrays.toString(basicNetwork.compute(inp).getData()));
-            System.out.println("Freeform: " + Arrays.toString(freeformNetwork.compute(inp).getData()));
+                System.out.println("Basic: " + Arrays.toString(basicNetwork.compute(inp).getData()));
+                System.out.println("Freeform: " + Arrays.toString(freeformNetwork.compute(inp).getData()));
+            } else {
+                BasicMLData inp = new BasicMLData(XOR_INPUT[2]);
 
+                freeformTrain.iteration();
+                basicTrain.iteration();
+                System.out.println("Iteration #" + i + " : "
+                        + "Basic: " + Format.formatPercent(basicTrain.getError())
+                        + ", Freeform: " + Format.formatPercent(freeformTrain.getError()));
+
+                System.out.println("Record count: " + trainingSet.getRecordCount());
+
+                System.out.println("Basic: " + Arrays.toString(basicNetwork.compute(inp).getData()));
+                System.out.println("Freeform: " + Arrays.toString(freeformNetwork.compute(inp).getData()));
+            }
             sample++;
-
             System.out.println();
         }
     }
