@@ -28,7 +28,7 @@ public class NNGun extends BaseGun {
     private RadarScanner _radarScanner;
 
     // Neural network stuff
-    //public static BasicNetwork basicNetwork;
+    public static BasicNetwork basicNetwork;
 
 
     public static final int GF_ZERO = 30; // 23; //15;
@@ -42,7 +42,7 @@ public class NNGun extends BaseGun {
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
         _radarScanner = radarScanner;
-/*
+
         // create the basic network
         basicNetwork = new BasicNetwork();
         basicNetwork.addLayer(new BasicLayer(null, true, 39));
@@ -52,7 +52,7 @@ public class NNGun extends BaseGun {
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
-*/
+
     }
 
     public String getName() {
@@ -76,7 +76,7 @@ public class NNGun extends BaseGun {
                 // Train based on waves.returnSegment
                 // waves.inputs
                 // waves.outputs (2 double arrays for training)
-                System.out.println(Arrays.toString(currentWave.inputs));
+                System.out.println("INP="+Arrays.toString(currentWave.inputs));
                 System.out.println(Arrays.toString(currentWave.outputs));
 
 
