@@ -20,7 +20,7 @@ import java.util.Arrays;
 public class FreeformCompare {
 
     public static final boolean dualHidden = true;
-    public static final int ITERATIONS = 300;
+    public static final int ITERATIONS = 200;
 
     public static BasicNetwork basicNetwork;
     public static FreeformNetwork freeformNetwork;
@@ -37,6 +37,9 @@ public class FreeformCompare {
     public static double XOR_INPUT3[][] = {{0.5, 0.0}, {0.5, 0.5},
             {0.0, 0.5}, {0.0, 0.0}};
 
+    public static double XOR_INPUT4[][] = {{0.0, 0.5}, {0.5, 0.5},
+            {0.5, 0.0}, {0.0, 0.0}};
+
     /**
      * The ideal data necessary for XOR.
      */
@@ -44,7 +47,9 @@ public class FreeformCompare {
 
     public static double XOR_IDEAL2[][] = {{1.0}, {0.0}, {0.0}, {1.0}};
 
-    public static double XOR_IDEAL3[][] = {{0.5}, {0.0}, {0.5}, {0.0}};
+    public static double XOR_IDEAL3[][] = {{1.0}, {0.0}, {1.0}, {0.0}};
+
+    public static double XOR_IDEAL4[][] = {{1.0}, {0.0}, {1.0}, {0.0}};
 
     public static void main(String[] args) {
 
@@ -83,6 +88,7 @@ public class FreeformCompare {
 
             if (i > 100) {
                 trainingSet.add(new BasicMLData(XOR_INPUT3[sample % XOR_INPUT3.length]), new BasicMLData(XOR_IDEAL3[sample % XOR_IDEAL3.length]));
+                trainingSet.add(new BasicMLData(XOR_INPUT4[sample % XOR_INPUT4.length]), new BasicMLData(XOR_IDEAL4[sample % XOR_IDEAL4.length]));
                 BasicMLData inp = new BasicMLData(XOR_INPUT3[1]);
 
                 freeformTrain.iteration();
