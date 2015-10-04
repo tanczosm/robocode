@@ -452,7 +452,7 @@ else
             newWave.highGF = copy;
         }
 
-        System.out.println("lowGF: " + newWave.lowGF + " highGF: " + newWave.highGF);
+        //System.out.println("lowGF: " + newWave.lowGF + " highGF: " + newWave.highGF);
 
         // this should do the opposite of the math in the WaveBullet:
         double guessfactor = (double) (bestGF - GF_ZERO) / (double) GF_ZERO;

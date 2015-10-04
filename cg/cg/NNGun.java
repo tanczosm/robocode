@@ -56,7 +56,7 @@ public class NNGun extends BaseGun {
         // create the basic network
         basicNetwork = new BasicNetwork();
         basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
-        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
         basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
         basicNetwork.getStructure().finalizeStructure();
         basicNetwork.reset();
@@ -98,8 +98,8 @@ public class NNGun extends BaseGun {
 
                 if (currentWave.actualHit)
                 {
-                    _hitQueueInputs.add(currentWave.inputs);
-                    _hitQueueOutputs.add(currentWave.outputs);
+                    _hitQueueInputs.add(currentWave.inputs.clone());
+                    _hitQueueOutputs.add(currentWave.outputs.clone());
 
                     if (_hitQueueInputs.size() > 15)
                     {
@@ -113,21 +113,34 @@ public class NNGun extends BaseGun {
                 System.out.println("INP="+Arrays.toString(currentWave.inputs));
                 System.out.println(Arrays.toString(currentWave.outputs));
 
+                //double[][] input = new double[1+_hitQueueInputs.size()][INPUT_LENGTH];
+                //double[][] output = new double[1+_hitQueueInputs.size()][OUTPUT_LENGTH];
+                double[][] input = new double[1][INPUT_LENGTH];
+                double[][] output = new double[1][OUTPUT_LENGTH];
 
-                ArrayList<MLDataPair> data = new ArrayList<MLDataPair>();
-                data.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
+                input[0] = currentWave.inputs;
+                output[0] = currentWave.outputs;
+
+                //ArrayList<MLDataPair> data = new ArrayList<MLDataPair>();
+                //data.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
                 //mld.add(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs));
 
                 /*
                 for (int k = 0; k < _hitQueueInputs.size(); k++)
                 {
-                    data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
+                    //data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
+                    assert _hitQueueInputs.get(k).length == INPUT_LENGTH : "INPUT LENGTH MISMATCH!";
+                    assert _hitQueueOutputs.get(k).length == OUTPUT_LENGTH : "OUTPUT LENGTH MISMATCH!";
+
+                    input[k+1] = _hitQueueInputs.get(k);
+                    output[k+1] = _hitQueueOutputs.get(k);
                 }
                 */
 
-                MLDataSet mld = new BasicMLDataSet(data);
+                MLDataSet mld = new BasicMLDataSet(input, output);
 
+                basicTrain.pause();
                 basicTrain.setTraining(mld);
                 basicTrain.iteration();
 

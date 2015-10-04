@@ -3,6 +3,7 @@ package cg;
 import robocode.*;
 
 import java.awt.geom.*;
+import java.util.Arrays;
 
 import robocode.util.Utils;
 
@@ -73,10 +74,11 @@ public class NNBullet {
             System.out.println("startBearing: " + startBearing + ", desiredDirection: " + desiredDirection + ", direction= " + direction + ", angleOffset= " + angleOffset + ", GF= " + guessFactor + ", maxEscapeAngle= " + maxEscapeAngle);
             */
             double gf = getGuessFactor(enemyX, enemyY);
-
+System.out.println("Correct gf is " + gf);
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            outputs = RBFUtils.processDataIntoFeatures(gf, 0.25, centers);
+            outputs = RBFUtils.processDataIntoFeatures(gf, 0.03, centers);
+            System.out.println("Output gf is " + Arrays.toString(outputs));
 
             if (getCurrentLocation((int)currentTime).distance(enemyX, enemyY) < 15)
             {
