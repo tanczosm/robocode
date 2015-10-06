@@ -308,6 +308,7 @@ public class GradientWorker implements EngineTask {
 	}
 	
 	public final void run(int index) {
+		System.out.println("Trying to get record #" + index + ", size() is " + this.training.size());
 		this.training.getRecord(index, this.pair);
 		process(pair);
 		this.owner.report(this.gradients, 0, null);

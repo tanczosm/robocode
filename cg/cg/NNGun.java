@@ -47,11 +47,14 @@ public class NNGun extends BaseGun {
     private ArrayList<double[]> _hitQueueInputs;
     private ArrayList<double[]> _hitQueueOutputs;
 
+    private ArrayList<MLDataPair> _theData;
+
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
         _radarScanner = radarScanner;
         _hitQueueInputs = new ArrayList<double[]>();
         _hitQueueOutputs = new ArrayList<double[]>();
+        _theData = new ArrayList<MLDataPair>();
 
         // create the basic network
         basicNetwork = new BasicNetwork();
@@ -62,8 +65,12 @@ public class NNGun extends BaseGun {
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
+
+        _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
+
         // create training data
-        MLDataSet trainingSet = new BasicMLDataSet(new double[1][INPUT_LENGTH], new double[1][OUTPUT_LENGTH]);
+        MLDataSet trainingSet = new BasicMLDataSet(_theData);
+//         MLDataSet trainingSet = new BasicMLDataSet(new double[1][INPUT_LENGTH], new double[1][OUTPUT_LENGTH]);
 
         // create two trainers
         basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
@@ -113,35 +120,43 @@ public class NNGun extends BaseGun {
                 System.out.println("INP="+Arrays.toString(currentWave.inputs));
                 System.out.println(Arrays.toString(currentWave.outputs));
 
-                //double[][] input = new double[1+_hitQueueInputs.size()][INPUT_LENGTH];
-                //double[][] output = new double[1+_hitQueueInputs.size()][OUTPUT_LENGTH];
-                double[][] input = new double[1][INPUT_LENGTH];
-                double[][] output = new double[1][OUTPUT_LENGTH];
+                /*
+                double[][] input = new double[1+_hitQueueInputs.size()][INPUT_LENGTH];
+                double[][] output = new double[1+_hitQueueInputs.size()][OUTPUT_LENGTH];
+                //double[][] input = new double[1][INPUT_LENGTH];
+                //double[][] output = new double[1][OUTPUT_LENGTH];
 
                 input[0] = currentWave.inputs;
                 output[0] = currentWave.outputs;
+                */
+                _theData.clear();
+                _theData.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
                 //ArrayList<MLDataPair> data = new ArrayList<MLDataPair>();
                 //data.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
                 //mld.add(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs));
 
-                /*
+
                 for (int k = 0; k < _hitQueueInputs.size(); k++)
                 {
                     //data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
                     assert _hitQueueInputs.get(k).length == INPUT_LENGTH : "INPUT LENGTH MISMATCH!";
                     assert _hitQueueOutputs.get(k).length == OUTPUT_LENGTH : "OUTPUT LENGTH MISMATCH!";
 
-                    input[k+1] = _hitQueueInputs.get(k);
-                    output[k+1] = _hitQueueOutputs.get(k);
+                    //input[k+1] = _hitQueueInputs.get(k);
+                    //output[k+1] = _hitQueueOutputs.get(k);
+                    _theData.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
+
                 }
-                */
 
-                MLDataSet mld = new BasicMLDataSet(input, output);
 
-                basicTrain.pause();
-                basicTrain.setTraining(mld);
+
+                //MLDataSet mld = new BasicMLDataSet(input, output);
+
+//System.out.println("Data set size is " + mld.size());
+                //basicTrain.pause();
+                //basicTrain.setTraining(mld);
                 basicTrain.iteration();
 
                 System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
