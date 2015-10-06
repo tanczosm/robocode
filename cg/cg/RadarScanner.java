@@ -256,7 +256,7 @@ public class RadarScanner {
 
         if (turnRadar) {
             double radarTurn = Utils.normalRelativeAngle(absBearing - _robot.getRadarHeadingRadians());
-            double extraTurn = Math.min(Math.atan(44.0 / e.getDistance()), Rules.RADAR_TURN_RATE_RADIANS);
+            double extraTurn = Math.min(Math.atan(65.0 / e.getDistance()), Rules.RADAR_TURN_RATE_RADIANS);
             radarTurn += (radarTurn < 0 ? -extraTurn : extraTurn);
 
             _robot.setTurnRadarRightRadians(radarTurn);

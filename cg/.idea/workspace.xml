@@ -22,20 +22,30 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="NNGun.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="NNGun.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cg/NNGun.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="208" column="92" selection-start-line="208" selection-start-column="89" selection-end-line="208" selection-end-column="92" />
+            <state vertical-scroll-proportion="0.5946792">
+              <caret line="208" column="90" selection-start-line="208" selection-start-column="90" selection-end-line="208" selection-end-column="90" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Backpropagation.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="RadarScanner.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/cg/RadarScanner.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="0.0">
+              <caret line="258" column="52" selection-start-line="258" selection-start-column="52" selection-end-line="258" selection-end-column="52" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Backpropagation.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/org/encog/neural/networks/training/propagation/back/Backpropagation.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-1.2535211">
+            <state vertical-scroll-proportion="0.0">
               <caret line="60" column="13" selection-start-line="60" selection-start-column="13" selection-end-line="60" selection-end-column="13" />
               <folding />
             </state>
@@ -67,16 +77,6 @@
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="-4.888889">
               <caret line="329" column="0" selection-start-line="329" selection-start-column="0" selection-end-line="329" selection-end-column="0" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MLDataSet.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/org/encog/ml/data/MLDataSet.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="41" column="17" selection-start-line="41" selection-start-column="17" selection-end-line="41" selection-end-column="17" />
               <folding />
             </state>
           </provider>
@@ -173,8 +173,9 @@
         <option value="$PROJECT_DIR$/cg/RBFUtils.java" />
         <option value="$PROJECT_DIR$/cg/FreeformCompare.java" />
         <option value="$PROJECT_DIR$/org/encog/neural/networks/training/propagation/Propagation.java" />
-        <option value="$PROJECT_DIR$/cg/NNGun.java" />
         <option value="$PROJECT_DIR$/org/encog/neural/networks/training/propagation/GradientWorker.java" />
+        <option value="$PROJECT_DIR$/cg/RadarScanner.java" />
+        <option value="$PROJECT_DIR$/cg/NNGun.java" />
       </list>
     </option>
   </component>
@@ -1008,14 +1009,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cg/RadarScanner.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="191" column="49" selection-start-line="191" selection-start-column="49" selection-end-line="191" selection-end-column="49" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cg/GFGun.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1064,14 +1057,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cg/NNGun.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="208" column="92" selection-start-line="208" selection-start-column="89" selection-end-line="208" selection-end-column="92" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cg/RBFUtils.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1116,8 +1101,24 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/org/encog/neural/networks/training/propagation/back/Backpropagation.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-1.2535211">
+        <state vertical-scroll-proportion="0.0">
           <caret line="60" column="13" selection-start-line="60" selection-start-column="13" selection-end-line="60" selection-end-column="13" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cg/RadarScanner.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="258" column="52" selection-start-line="258" selection-start-column="52" selection-end-line="258" selection-end-column="52" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cg/NNGun.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.5946792">
+          <caret line="208" column="90" selection-start-line="208" selection-start-column="90" selection-end-line="208" selection-end-column="90" />
           <folding />
         </state>
       </provider>

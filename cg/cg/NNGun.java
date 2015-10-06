@@ -206,7 +206,7 @@ public class NNGun extends BaseGun {
         */
 
         // Distance - Range 0 - 800, split into 11 features
-        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 800, RBFUtils.getCenters(0, 800, 11));
+        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 200, RBFUtils.getCenters(0, 800, 11));
 
         // Lateral Velocity - Range 0 - 8, split into 8 features
         double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity*8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
