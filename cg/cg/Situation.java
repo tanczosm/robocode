@@ -24,6 +24,7 @@ public class Situation {
     public double NormalizedDistance;
     public double Distance;
     public double DistanceDelta;
+    public double DistanceLast10;
     public double PlayerLateralVelocity;
     public double LateralVelocity;
     public double AdvancingVelocity;

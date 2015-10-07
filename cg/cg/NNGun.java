@@ -33,7 +33,7 @@ public class NNGun extends BaseGun {
     public BasicNetwork basicNetwork;
     public Backpropagation basicTrain;
 
-    public static final int INPUT_LENGTH = 57;
+    public static final int INPUT_LENGTH = 63;
     public static final int OUTPUT_LENGTH = 61;
 
     public static final int GF_ZERO = 30; // 23; //15;
@@ -43,6 +43,7 @@ public class NNGun extends BaseGun {
     private NNBullet newWave = null;
     private Situation _lastSituation = null;
     int direction = 1;
+    double currentGuessFactor = 0;
 
     private ArrayList<double[]> _hitQueueInputs;
     private ArrayList<double[]> _hitQueueOutputs;
@@ -59,7 +60,7 @@ public class NNGun extends BaseGun {
         // create the basic network
         basicNetwork = new BasicNetwork();
         basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
-        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
         basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
         basicNetwork.getStructure().finalizeStructure();
         basicNetwork.reset();
@@ -219,6 +220,8 @@ public class NNGun extends BaseGun {
         double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 16.0, RBFUtils.getCenters(-8d, +8d, 9));
 
         // Need distance delta
+        double[] fdistlast10 = RBFUtils.processDataIntoFeatures(s.DistanceLast10, 80, RBFUtils.getCenters(0, 80, 6));
+
 
         // SinceVelocityChange - Range 0 - 1, split into 7 features
         double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.5, RBFUtils.getCenters(0, 1, 7));
@@ -229,7 +232,10 @@ public class NNGun extends BaseGun {
         // Wall Tries Backward - Range 0.0 - 20.0, split into 4 features
         double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack*20, 20.0, RBFUtils.getCenters(0, 20, 4));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fsincevelch, ffwalltries, fbwalltries);
+        // Current guess factor - Range -1.0 - 1.0, split into 11 features
+        //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 0.5, RBFUtils.getCenters(-1.0, 1.0, 11));
+
+        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, ffwalltries, fbwalltries); //, fcurgf);
 
         // Situation s already contains normalized data
         /*
@@ -309,6 +315,7 @@ public class NNGun extends BaseGun {
 
         // this should do the opposite of the math in the WaveBullet:
         double guessfactor = (double) (bestGF - GF_ZERO) / (double) GF_ZERO;
+        currentGuessFactor = guessfactor;
 
         double angleOffset = direction < 0 ? -(guessfactor * newWave.lowGF * newWave.maxEscapeAngle) :
                 (guessfactor * newWave.highGF * newWave.maxEscapeAngle);

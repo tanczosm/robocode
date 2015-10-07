@@ -52,10 +52,12 @@ public class RadarScanner {
     public double _lastVelocityChange = 0;
     public double _lastLatVel = 0;
 
+    public ArrayList<Double> _LateralVelocityLast10;
 
     public RadarScanner() {
         _surfDirections = new ArrayList<Integer>();
         _surfAbsBearings = new ArrayList<Double>();
+        _LateralVelocityLast10 = new ArrayList<Double>();
         _nodeQueue = new ArrayList<Situation>(100);
         _enemyNodeQueue = new ArrayList<EnemySituation>(100);
         _registeredGuns = new ArrayList<BaseGun>();
@@ -182,6 +184,15 @@ public class RadarScanner {
         nme.headingRadians = e.getHeadingRadians();
         nme.distance = e.getDistance();
 
+        _LateralVelocityLast10.add(lateralVelocity);
+        if (_LateralVelocityLast10.size() > 10)
+            _LateralVelocityLast10.remove(0);
+
+        double LatVelLast10 = 0;
+        for (int k = 0; k < _LateralVelocityLast10.size(); k++)
+        {
+            LatVelLast10 += _LateralVelocityLast10.get(k);
+        }
 
         Situation scan = new Situation();
         scan.Time = time - 1;
@@ -192,6 +203,7 @@ public class RadarScanner {
         scan.WallTriesBack = wallTriesBack / 20d;
         scan.NormalizedDistance = distance / 800d;
         scan.Distance = distance;
+        scan.DistanceLast10 = Math.max(0, Math.min(80.0, LatVelLast10));
         scan.Velocity = absVelocity / 8d;
         scan.Acceleration = acceleration / 2d;
         scan.SinceVelocityChange = velocityChangeValue / 4d;
