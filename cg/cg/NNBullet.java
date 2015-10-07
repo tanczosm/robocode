@@ -77,7 +77,7 @@ public class NNBullet {
 System.out.println("Correct gf is " + gf);
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            outputs = RBFUtils.processDataIntoFeatures(gf, 0.25, centers);
+            outputs = RBFUtils.processDataIntoFeatures(gf, 0.03, centers);
             System.out.println("Output gf is " + Arrays.toString(outputs));
 
             if (getCurrentLocation((int)currentTime).distance(enemyX, enemyY) <= 18)

@@ -26,7 +26,7 @@
         <entry file="file://$PROJECT_DIR$/cg/NNGun.java">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="35" column="45" selection-start-line="35" selection-start-column="45" selection-end-line="35" selection-end-column="45" />
+              <caret line="55" column="41" selection-start-line="55" selection-start-column="41" selection-end-line="55" selection-end-column="41" />
               <folding />
             </state>
           </provider>
@@ -74,20 +74,20 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="RBFUtils.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="RBFUtils.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/cg/RBFUtils.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="34" column="63" selection-start-line="34" selection-start-column="63" selection-end-line="34" selection-end-column="63" />
+            <state vertical-scroll-proportion="0.46735394">
+              <caret line="34" column="57" selection-start-line="34" selection-start-column="57" selection-end-line="34" selection-end-column="57" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="NNBullet.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="NNBullet.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/cg/NNBullet.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.52577317">
+            <state vertical-scroll-proportion="0.0">
               <caret line="79" column="63" selection-start-line="79" selection-start-column="63" selection-end-line="79" selection-end-column="63" />
               <folding />
             </state>
@@ -139,14 +139,14 @@
         <option value="$PROJECT_DIR$/src/Targeting.java" />
         <option value="$PROJECT_DIR$/src/NeuralNetworkTesting/FreeformCompare.java" />
         <option value="$PROJECT_DIR$/cg/Targeting.java" />
-        <option value="$PROJECT_DIR$/cg/RBFUtils.java" />
         <option value="$PROJECT_DIR$/cg/FreeformCompare.java" />
         <option value="$PROJECT_DIR$/org/encog/neural/networks/training/propagation/Propagation.java" />
         <option value="$PROJECT_DIR$/org/encog/neural/networks/training/propagation/GradientWorker.java" />
         <option value="$PROJECT_DIR$/cg/Situation.java" />
         <option value="$PROJECT_DIR$/cg/RadarScanner.java" />
-        <option value="$PROJECT_DIR$/cg/NNGun.java" />
         <option value="$PROJECT_DIR$/cg/NNBullet.java" />
+        <option value="$PROJECT_DIR$/cg/NNGun.java" />
+        <option value="$PROJECT_DIR$/cg/RBFUtils.java" />
       </list>
     </option>
   </component>
@@ -697,7 +697,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/cg/NNGun.java</url>
-          <line>106</line>
+          <line>121</line>
           <properties />
           <option name="timeStamp" value="3" />
         </line-breakpoint>
@@ -1022,14 +1022,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cg/RBFUtils.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="34" column="63" selection-start-line="34" selection-start-column="63" selection-end-line="34" selection-end-column="63" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/cg/FreeformCompare.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1064,18 +1056,26 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cg/NNGun.java">
+    <entry file="file://$PROJECT_DIR$/cg/NNBullet.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="35" column="45" selection-start-line="35" selection-start-column="45" selection-end-line="35" selection-end-column="45" />
+          <caret line="79" column="63" selection-start-line="79" selection-start-column="63" selection-end-line="79" selection-end-column="63" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/cg/NNBullet.java">
+    <entry file="file://$PROJECT_DIR$/cg/NNGun.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.52577317">
-          <caret line="79" column="63" selection-start-line="79" selection-start-column="63" selection-end-line="79" selection-end-column="63" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="55" column="41" selection-start-line="55" selection-start-column="41" selection-end-line="55" selection-end-column="41" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/cg/RBFUtils.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.46735394">
+          <caret line="34" column="57" selection-start-line="34" selection-start-column="57" selection-end-line="34" selection-end-column="57" />
           <folding />
         </state>
       </provider>

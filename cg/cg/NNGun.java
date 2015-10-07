@@ -33,6 +33,9 @@ public class NNGun extends BaseGun {
     public BasicNetwork basicNetwork;
     public Backpropagation basicTrain;
 
+    public BasicNetwork randomNetwork;
+    public Backpropagation randomTrain;
+
     public static final int INPUT_LENGTH = 63;
     public static final int OUTPUT_LENGTH = 61;
 
@@ -47,8 +50,10 @@ public class NNGun extends BaseGun {
 
     private ArrayList<double[]> _hitQueueInputs;
     private ArrayList<double[]> _hitQueueOutputs;
+    private ArrayList<MLDataPair> _last200;
 
     private ArrayList<MLDataPair> _theData;
+    private ArrayList<MLDataPair> _randomData;
 
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
@@ -56,6 +61,7 @@ public class NNGun extends BaseGun {
         _hitQueueInputs = new ArrayList<double[]>();
         _hitQueueOutputs = new ArrayList<double[]>();
         _theData = new ArrayList<MLDataPair>();
+        _last200 = new ArrayList<MLDataPair>();
 
         // create the basic network
         basicNetwork = new BasicNetwork();
@@ -66,6 +72,14 @@ public class NNGun extends BaseGun {
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
+        // create the basic network
+        randomNetwork = new BasicNetwork();
+        randomNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        randomNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+        randomNetwork.getStructure().finalizeStructure();
+        randomNetwork.reset();
+        randomNetwork.reset(1000);
 
         _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
 
@@ -75,9 +89,10 @@ public class NNGun extends BaseGun {
 
         // create two trainers
         basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        randomTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
 
         basicTrain.setBatchSize(1);
-
+        randomTrain.setBatchSize(1);
     }
 
     public String getName() {
@@ -158,7 +173,7 @@ public class NNGun extends BaseGun {
 //System.out.println("Data set size is " + mld.size());
                 //basicTrain.pause();
                 //basicTrain.setTraining(mld);
-                basicTrain.iteration();
+                basicTrain.iteration(10);
 
                 System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
 
