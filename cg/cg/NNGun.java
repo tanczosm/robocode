@@ -175,7 +175,7 @@ public class NNGun extends BaseGun {
                 //basicTrain.setTraining(mld);
                 basicTrain.iteration(10);
 
-                System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
+                System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
 
 
                 waves.remove(currentWave);
@@ -280,6 +280,39 @@ public class NNGun extends BaseGun {
         _lastSituation = s;
     }
 
+    public int getCentroid (double[] results)
+    {
+        int bestIndex = 0;
+        double bestDensity = 0;
+
+        for (int i = results.length-1; --i >= 0; ) {
+
+            double density = 0;
+            double u;
+            for (int j = results.length; --j >= 0; ) {
+                double kdeDiff = results[i] - results[j];
+                //double kdeDiff = Math.abs(bestNodes.get(i).Distance - bestNodes.get(j).Distance);
+
+                density += Math.exp(
+                        (
+                                u = (kdeDiff) / 12 // BAND_WIDTH
+                        )
+                                * u
+                                * -0.5d
+                );
+            }
+
+
+            if (density > bestDensity) {
+                bestDensity = density;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+
+    }
+
     public double projectBearing(Situation s, double x, double y, double enemyHeading) {
 
         if (s == null)
@@ -313,18 +346,22 @@ public class NNGun extends BaseGun {
         BasicMLData inp = new BasicMLData(situationInput);
 
         double[] outgf = basicNetwork.compute(inp).getData();
-        System.out.println("Basic: " + Arrays.toString(outgf));
+        System.out.println("Guessfactor Output: " + Arrays.toString(outgf));
 
+        /*
         int maxgf = 31;
         for (int i = 0; i < outgf.length; i++)
         {
+            outgf[i] = 1.0 - outgf[i];
            if (outgf[i] > outgf[maxgf])
            {
                maxgf = i;
            }
         }
+        */
 
-        bestGF = maxgf;
+        //bestGF = maxgf;
+        bestGF = getCentroid(outgf);
 
         newWave.fireIndex = bestGF;
 
