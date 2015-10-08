@@ -17,6 +17,7 @@ import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 import org.encog.util.Format;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -119,13 +120,11 @@ public class NNGun extends BaseGun {
                     continue;
                 }
 
-                if (currentWave.actualHit)
-                {
+                if (currentWave.actualHit) {
                     _hitQueueInputs.add(currentWave.inputs.clone());
                     _hitQueueOutputs.add(currentWave.outputs.clone());
 
-                    if (_hitQueueInputs.size() > 15)
-                    {
+                    if (_hitQueueInputs.size() > 15) {
                         _hitQueueOutputs.remove(0);
                         _hitQueueInputs.remove(0);
                     }
@@ -133,7 +132,7 @@ public class NNGun extends BaseGun {
                 // Train based on waves.returnSegment
                 // waves.inputs
                 // waves.outputs (2 double arrays for training)
-                System.out.println("INP="+Arrays.toString(currentWave.inputs));
+                System.out.println("INP=" + Arrays.toString(currentWave.inputs));
                 System.out.println(Arrays.toString(currentWave.outputs));
 
                 /*
@@ -154,8 +153,7 @@ public class NNGun extends BaseGun {
                 //mld.add(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs));
 
 
-                for (int k = 0; k < _hitQueueInputs.size(); k++)
-                {
+                for (int k = 0; k < _hitQueueInputs.size(); k++) {
                     //data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
                     assert _hitQueueInputs.get(k).length == INPUT_LENGTH : "INPUT LENGTH MISMATCH!";
                     assert _hitQueueOutputs.get(k).length == OUTPUT_LENGTH : "OUTPUT LENGTH MISMATCH!";
@@ -167,13 +165,12 @@ public class NNGun extends BaseGun {
                 }
 
 
-
                 //MLDataSet mld = new BasicMLDataSet(input, output);
 
 //System.out.println("Data set size is " + mld.size());
                 //basicTrain.pause();
                 //basicTrain.setTraining(mld);
-                basicTrain.iteration(10);
+                basicTrain.iteration(100);
 
                 System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
 
@@ -196,8 +193,7 @@ public class NNGun extends BaseGun {
 
     }
 
-    public double [] getInputForSituation (Situation s)
-    {
+    public double[] getInputForSituation(Situation s) {
 
         /*
             Data	Range	Features
@@ -225,7 +221,7 @@ public class NNGun extends BaseGun {
         double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 200, RBFUtils.getCenters(0, 800, 11));
 
         // Lateral Velocity - Range 0 - 8, split into 8 features
-        double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity*8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
+        double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity * 8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
 
         // Acceleration - Range 0 - 1.0, split into 11 features
         double[] faccel = RBFUtils.processDataIntoFeatures(s.Acceleration, 1.0, RBFUtils.getCenters(0, 1.0, 11));
@@ -242,10 +238,10 @@ public class NNGun extends BaseGun {
         double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.5, RBFUtils.getCenters(0, 1, 7));
 
         // Wall Tries Forward - Range 0.0 - 20.0, split into 7 features
-        double[] ffwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesForward*20, 20.0, RBFUtils.getCenters(0, 20, 7));
+        double[] ffwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesForward * 20, 20.0, RBFUtils.getCenters(0, 20, 7));
 
         // Wall Tries Backward - Range 0.0 - 20.0, split into 4 features
-        double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack*20, 20.0, RBFUtils.getCenters(0, 20, 4));
+        double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack * 20, 20.0, RBFUtils.getCenters(0, 20, 4));
 
         // Current guess factor - Range -1.0 - 1.0, split into 11 features
         //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 0.5, RBFUtils.getCenters(-1.0, 1.0, 11));
@@ -280,12 +276,11 @@ public class NNGun extends BaseGun {
         _lastSituation = s;
     }
 
-    public int getCentroid (double[] results)
-    {
+    public int getCentroid(double[] results) {
         int bestIndex = 0;
         double bestDensity = 0;
 
-        for (int i = results.length-1; --i >= 0; ) {
+        for (int i = results.length - 1; --i >= 0; ) {
 
             double density = 0;
             double u;
@@ -293,13 +288,7 @@ public class NNGun extends BaseGun {
                 double kdeDiff = results[i] - results[j];
                 //double kdeDiff = Math.abs(bestNodes.get(i).Distance - bestNodes.get(j).Distance);
 
-                density += Math.exp(
-                        (
-                                u = (kdeDiff) / 12 // BAND_WIDTH
-                        )
-                                * u
-                                * -0.5d
-                );
+                density += Math.exp((u = (kdeDiff) / 12 /* BAND_WIDTH */) * u * -0.5d);
             }
 
 
@@ -348,20 +337,18 @@ public class NNGun extends BaseGun {
         double[] outgf = basicNetwork.compute(inp).getData();
         System.out.println("Guessfactor Output: " + Arrays.toString(outgf));
 
-        /*
-        int maxgf = 31;
-        for (int i = 0; i < outgf.length; i++)
-        {
-            outgf[i] = 1.0 - outgf[i];
-           if (outgf[i] > outgf[maxgf])
-           {
-               maxgf = i;
-           }
-        }
-        */
 
-        //bestGF = maxgf;
-        bestGF = getCentroid(outgf);
+        int maxgf = 31;
+        for (int i = 0; i < outgf.length; i++) {
+            //outgf[i] = 1.0 - outgf[i];
+            if (outgf[i] > outgf[maxgf]) {
+                maxgf = i;
+            }
+        }
+
+
+        bestGF = maxgf;
+        //bestGF = getCentroid(outgf);
 
         newWave.fireIndex = bestGF;
 
