@@ -1,15 +1,10 @@
 package cg;
 
 import robocode.AdvancedRobot;
-import robocode.Rules;
 import robocode.ScannedRobotEvent;
-import robocode.util.Utils;
 
-import java.awt.Color;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
-
-import static robocode.util.Utils.normalRelativeAngleDegrees;
 
 public class V extends AdvancedRobot {
 
@@ -85,7 +80,8 @@ public class V extends AdvancedRobot {
                 _radarScanner.nme.lastShotTime = getTime();
 
         } catch (ArrayIndexOutOfBoundsException em) {
-            System.out.println(em.getMessage());
+            //System.out.println(em.getMessage());
+            System.out.println();
         }
 
 

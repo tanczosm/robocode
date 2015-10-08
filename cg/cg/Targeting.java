@@ -3,12 +3,10 @@ package cg;
 import robocode.AdvancedRobot;
 import robocode.BattleRules;
 import robocode.Bullet;
-import robocode.Rules;
 import robocode.util.Utils;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -173,11 +171,13 @@ public class Targeting {
 
     public void reportAccuracy() {
         NumberFormat formatter = new DecimalFormat("#0.00");
+        /*
         System.out.print("Current Accuracy: ");
         for (BaseGun gun : guns) {
             System.out.print("[" + gun.getName() + "=" + formatter.format(gun.getRatingPercent() * 100) + "]" + (_currentGun == gun ? "* " : " "));
         }
         System.out.println();
+        */
     }
 
     public void selectFiringPower(double distance) {

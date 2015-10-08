@@ -1,6 +1,5 @@
 package cg;
 
-import robocode.*;
 import robocode.util.Utils;
 
 // See Chalk bot source for calculations

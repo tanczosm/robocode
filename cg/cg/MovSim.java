@@ -1,10 +1,7 @@
 package cg;
 
-import java.awt.geom.Point2D;
-import java.util.Vector;
-
-import robocode.util.*;
-import robocode.*;
+import robocode.AdvancedRobot;
+import robocode.util.Utils;
 
 public class MovSim {
 

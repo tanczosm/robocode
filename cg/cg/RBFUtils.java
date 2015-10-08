@@ -8,8 +8,7 @@ import java.util.Arrays;
 public class RBFUtils {
     // min is smallest possible value in range, and max is largest possible value in range
     // This method simply calculates an evenly spaced spread of features between min and max
-    public static double[] getCenters (double min, double max, int numberFeatures)
-    {
+    public static double[] getCenters(double min, double max, int numberFeatures) {
         double maxdist = max - min;
 
         assert maxdist > 0 : "The difference between max and min must be greater than zero";
@@ -18,20 +17,17 @@ public class RBFUtils {
         double gap = maxdist / (numberFeatures - 1);
         double[] result = new double[numberFeatures];
 
-        for (int i = 0; i < numberFeatures; i++)
-        {
-            result[i] = min + (i*gap);
+        for (int i = 0; i < numberFeatures; i++) {
+            result[i] = min + (i * gap);
         }
 
         return result;
     }
 
-    public static double[] processDataIntoFeatures (double data, double width, double[] centers)
-    {
+    public static double[] processDataIntoFeatures(double data, double width, double[] centers) {
         double[] result = new double[centers.length];
 
-        for (int i = 0; i < centers.length; i++)
-        {
+        for (int i = 0; i < centers.length; i++) {
             result[i] = Math.pow(data - centers[i], 2) / width;
             result[i] = Math.exp(-result[i]);
         }
@@ -39,7 +35,7 @@ public class RBFUtils {
         return result;
     }
 
-    public static double[] mergeFeatures (double[] first, double[]... rest) {
+    public static double[] mergeFeatures(double[] first, double[]... rest) {
         int totalLength = first.length;
         for (double[] array : rest) {
             totalLength += array.length;

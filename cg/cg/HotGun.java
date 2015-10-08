@@ -1,10 +1,6 @@
 package cg;
 
 import robocode.AdvancedRobot;
-import robocode.util.Utils;
-
-import java.awt.geom.Point2D;
-import java.util.ArrayList;
 
 /**
  * Gun designed for head-on targeting - only used as a last option if enemy is disabled

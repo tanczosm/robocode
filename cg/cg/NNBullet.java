@@ -1,11 +1,9 @@
 package cg;
 
-import robocode.*;
-
-import java.awt.geom.*;
-import java.util.Arrays;
-
 import robocode.util.Utils;
+
+import java.awt.geom.Point2D;
+import java.util.Arrays;
 
 public class NNBullet {
     public double startX, startY, startBearing, power, directAngle, maxEscapeAngle;
@@ -20,7 +18,7 @@ public class NNBullet {
     public double lowGF, highGF;
 
     public NNBullet(double x, double y, double bearing, double directAngle, double power,
-                      int direction, long time, double[] inputs) {
+                    int direction, long time, double[] inputs) {
         startX = x;
         startY = y;
         startBearing = bearing;
@@ -75,14 +73,13 @@ public class NNBullet {
             System.out.println("startBearing: " + startBearing + ", desiredDirection: " + desiredDirection + ", direction= " + direction + ", angleOffset= " + angleOffset + ", GF= " + guessFactor + ", maxEscapeAngle= " + maxEscapeAngle);
             */
             double gf = getGuessFactor(enemyX, enemyY);
-System.out.println("Correct gf is " + gf);
+            //System.out.println("Correct gf is " + gf);
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
             outputs = RBFUtils.processDataIntoFeatures(gf, 0.1, centers);
-            System.out.println("Output gf is " + Arrays.toString(outputs));
+            //System.out.println("Output gf is " + Arrays.toString(outputs));
 
-            if (getCurrentLocation((int)currentTime).distance(enemyX, enemyY) <= 18)
-            {
+            if (getCurrentLocation((int) currentTime).distance(enemyX, enemyY) <= 18) {
                 actualHit = true;
             }
 

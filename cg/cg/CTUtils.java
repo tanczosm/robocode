@@ -3,7 +3,8 @@ package cg;
 import robocode.AdvancedRobot;
 import robocode.util.Utils;
 
-import java.awt.geom.*;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 
 /**
  * Created by tanczosm on 5/29/2015.

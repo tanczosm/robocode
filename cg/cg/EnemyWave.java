@@ -1,11 +1,6 @@
 package cg;
 
-import robocode.*;
-import robocode.util.Utils;
-
-import java.awt.*;
-import java.awt.geom.*;     // for Point2D's
-import java.util.ArrayList; // for collection of waves
+import java.awt.geom.Point2D;
 
 class EnemyWave {
     Point2D.Double fireLocation;

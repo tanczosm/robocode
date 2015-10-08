@@ -1,14 +1,10 @@
 package cg;
 
-import cg.BaseGun;
-import cg.RadarScanner;
-import cg.Situation;
 import robocode.AdvancedRobot;
-import robocode.util.Utils;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**

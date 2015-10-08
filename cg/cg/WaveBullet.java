@@ -1,10 +1,8 @@
 package cg;
 
-import robocode.*;
-
-import java.awt.geom.*;
-
 import robocode.util.Utils;
+
+import java.awt.geom.Point2D;
 
 public class WaveBullet {
     public double startX, startY, startBearing, power, directAngle, maxEscapeAngle;

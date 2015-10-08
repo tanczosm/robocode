@@ -1,10 +1,10 @@
 package NeuralNetworkTesting;
 
-import org.encog.ml.data.basic.BasicMLDataSet;
-import org.encog.ml.data.basic.BasicMLDataPair;
-import org.encog.ml.data.basic.BasicMLData;
-import org.encog.ml.data.MLDataPair;
 import org.encog.engine.network.activation.ActivationSigmoid;
+import org.encog.ml.data.MLDataPair;
+import org.encog.ml.data.basic.BasicMLData;
+import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.util.simple.EncogUtility;

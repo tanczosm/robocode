@@ -1,15 +1,14 @@
 package cg;
 
 
-import java.awt.*;
+import robocode.*;
+import robocode.util.Utils;
+
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-
-import robocode.*;
-import robocode.util.Utils;
 
 /**
  * In charge of collecting data from the radar on scanned events - RadarScanner will act as the central
@@ -99,7 +98,7 @@ public class RadarScanner {
             try {
                 fileWriter = new PrintStream(new RobocodeFileOutputStream(_robot.getDataFile("count.csv")));
             } catch (IOException e) {
-                System.out.println("Unable to write to variables log. " + e.getMessage());
+                //System.out.println("Unable to write to variables log. " + e.getMessage());
             }
         }
     }
@@ -189,8 +188,7 @@ public class RadarScanner {
             _LateralVelocityLast10.remove(0);
 
         double LatVelLast10 = 0;
-        for (int k = 0; k < _LateralVelocityLast10.size(); k++)
-        {
+        for (int k = 0; k < _LateralVelocityLast10.size(); k++) {
             LatVelLast10 += _LateralVelocityLast10.get(k);
         }
 
@@ -239,7 +237,7 @@ public class RadarScanner {
                     if (LOG_TO_FILE) {
                         writeLogLine(s);
                     } else
-                        System.out.println("UNABLE TO WRITE LINE");
+                        //System.out.println("UNABLE TO WRITE LINE");
 
                     //System.out.println("Added scan point");
                     for (BaseGun gun : _registeredGuns) {

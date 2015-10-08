@@ -1,7 +1,7 @@
 package cg;
 
-import java.util.ArrayList;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 
 public abstract class BaseGun {
 

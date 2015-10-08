@@ -1,22 +1,16 @@
 package cg;
 
-import org.encog.ml.data.MLDataPair;
-import org.encog.ml.data.basic.BasicMLDataPair;
-import robocode.AdvancedRobot;
 import org.encog.engine.network.activation.ActivationSigmoid;
-import org.encog.ml.data.MLData;
+import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLData;
+import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.data.basic.BasicMLDataSet;
-import org.encog.ml.train.MLTrain;
-import org.encog.neural.freeform.FreeformNetwork;
-import org.encog.neural.freeform.training.FreeformBackPropagation;
-import org.encog.neural.freeform.training.FreeformResilientPropagation;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
-import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 import org.encog.util.Format;
+import robocode.AdvancedRobot;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -396,7 +390,7 @@ public class NNGun extends BaseGun {
 
 
                 if (currentWave.inputs.length != INPUT_LENGTH || currentWave.outputs.length != OUTPUT_LENGTH) {
-                    System.out.println("Inputs length mismatch - should be " + currentWave.inputs.length);
+                    //System.out.println("Inputs length mismatch - should be " + currentWave.inputs.length);
                     continue;
                 }
 
@@ -412,8 +406,8 @@ public class NNGun extends BaseGun {
                 // Train based on waves.outputs
                 // waves.inputs
                 // waves.outputs (2 double arrays for training)
-                System.out.println("INP=" + Arrays.toString(currentWave.inputs));
-                System.out.println(Arrays.toString(currentWave.outputs));
+                //System.out.println("INP=" + Arrays.toString(currentWave.inputs));
+                //System.out.println(Arrays.toString(currentWave.outputs));
 
                 _theData.clear();
                 _theData.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
@@ -431,9 +425,8 @@ public class NNGun extends BaseGun {
 
                 _randomDataBuffer.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
-                if (_randomDataBuffer.size() > 200)
-                {
-                    int randIndex = (int)(_rand.nextDouble() * 199);
+                if (_randomDataBuffer.size() > 200) {
+                    int randIndex = (int) (_rand.nextDouble() * 199);
 
                     _randomDataBuffer.remove(randIndex);
                 }
@@ -442,19 +435,17 @@ public class NNGun extends BaseGun {
 
                 if (_randomDataBuffer.size() > 5) {
                     for (int j = 0; j < 5; j++) {
-                        int randIndex = (int)(_rand.nextDouble() * 4.9);
+                        int randIndex = (int) (_rand.nextDouble() * 4.9);
 
                         _randomData.add(_randomDataBuffer.get(randIndex));
                     }
                 }
 
-                if (currentWave.actualHit)
-                {
-                    int k = _hitQueueInputs.size()-1;
+                if (currentWave.actualHit) {
+                    int k = _hitQueueInputs.size() - 1;
                     _randomData.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
 
                 }
-
 
 
                 //MLDataSet mld = new BasicMLDataSet(input, output);
@@ -465,8 +456,8 @@ public class NNGun extends BaseGun {
                 basicTrain.iteration(10);
                 randomTrain.iteration(10);
 
-                System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
-                System.out.println("Random Error: " + Format.formatPercent(randomTrain.getError()));
+                //System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
+                //System.out.println("Random Error: " + Format.formatPercent(randomTrain.getError()));
 
                 waves.remove(currentWave);
                 i--;
@@ -578,7 +569,7 @@ public class NNGun extends BaseGun {
             double density = 0;
             double u;
             for (int j = results.length; --j >= 0; ) {
-                double kdeDiff = (results[i] - results[j])*1000;
+                double kdeDiff = (results[i] - results[j]) * 1000;
                 //double kdeDiff = Math.abs(bestNodes.get(i).Distance - bestNodes.get(j).Distance);
 
                 density += Math.exp((u = (kdeDiff)  /* BAND_WIDTH */) * u * -0.5d);
