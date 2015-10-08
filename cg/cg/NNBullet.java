@@ -16,6 +16,7 @@ public class NNBullet {
     public boolean actualHit = false;
     public int fireIndex;
 
+    public RobotState[] moves;
     public double lowGF, highGF;
 
     public NNBullet(double x, double y, double bearing, double directAngle, double power,
@@ -77,7 +78,7 @@ public class NNBullet {
 System.out.println("Correct gf is " + gf);
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            outputs = RBFUtils.processDataIntoFeatures(gf, 0.03, centers);
+            outputs = RBFUtils.processDataIntoFeatures(gf, 0.1, centers);
             System.out.println("Output gf is " + Arrays.toString(outputs));
 
             if (getCurrentLocation((int)currentTime).distance(enemyX, enemyY) <= 18)

@@ -49,26 +49,29 @@ public class GFGun extends BaseGun {
         double ey = _robot.getY() + Math.cos(absBearing) * _radarScanner.nme.distance;
 
         Graphics2D g = _robot.getGraphics();
+        /*
         g.setColor(Color.WHITE);
         g.drawRect((int) ex - 32, (int) ey - 32, 64, 64);
 
         drawWaves();
-
+    */
 
         // Let's process the waves now:
         for (int i = 0; i < waves.size(); i++) {
             WaveBullet currentWave = (WaveBullet) waves.get(i);
             if (currentWave.checkHit(ex, ey, _robot.getTime())) {
-                g.drawOval((int) currentWave.startX, (int) currentWave.startY, 4, 4);
+                //g.drawOval((int) currentWave.startX, (int) currentWave.startY, 4, 4);
                 waves.remove(currentWave);
                 i--;
             }
 
+            /*
             Point2D.Double pt = currentWave.getCurrentLocation((int) _robot.getTime());
             Point2D.Double pt2 = CTUtils.project(pt, currentWave.startBearing, currentWave.getBulletSpeed());
             //g.drawOval((int)pt.getX()-3, (int)pt.getY()-3,6,6);
             g.setColor(new Color(0.0f, 1.0f, 1.0f, 0.5f));
             g.drawLine((int) pt.getX(), (int) pt.getY(), (int) pt2.getX(), (int) pt2.getY());
+            */
         }
     }
 
