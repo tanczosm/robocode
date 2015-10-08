@@ -448,7 +448,7 @@ public class NNGun extends BaseGun {
                     }
                 }
 
-                if (_hitQueueInputs.size() > 0)
+                if (currentWave.actualHit)
                 {
                     int k = _hitQueueInputs.size()-1;
                     _randomData.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
