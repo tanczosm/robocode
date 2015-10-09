@@ -178,7 +178,55 @@ public class NNGun extends BaseGun {
 
     }
 
+    public void drawFactor(double[] data, int factorStart, int featureCount, String featureName, int topx, int topy, int position)
+    {
+        Graphics2D g = _robot.getGraphics();
+
+        double graphWidth = 150;
+        int height = 50;
+
+        topy = (height+5) * position;
+        int graphx = topx, graphy = topy + height - 10, cnt = 0;
+
+        g.setColor(Color.GREEN);
+        g.drawLine(graphx, graphy, graphx + ((int) graphWidth), graphy);
+        g.drawLine(graphx, graphy, graphx, graphy + (height-10));
+        g.drawLine(graphx + ((int) graphWidth), graphy, graphx + (int) graphWidth, graphy + (height-10));
+
+        g.setColor(Color.white);
+        Point2D.Double lastpoint = new Point2D.Double(graphx, graphy);
+
+        g.setFont(new Font("Verdana", Font.PLAIN, 10));
+        g.drawString(featureName, graphx, graphy - 10);
+
+        for (int i = factorStart; i < factorStart+featureCount && i < data.length; i++) {
+            g.setColor(Color.MAGENTA);
+            //g.drawOval(graphx + (int) (cnt * (graphWidth / featureCount)) - 1, graphy + (int) (data[i] * 20), 2, 2);
+            Point2D.Double nextpoint = new Point2D.Double(graphx + (int) (cnt * (graphWidth / featureCount)) - 1, graphy + (int) (data[i] * (height-10)));
+            g.drawLine((int)lastpoint.x, (int)lastpoint.y, (int)nextpoint.x, (int)nextpoint.y);
+
+            lastpoint = nextpoint;
+
+            cnt++;
+        }
+
+        Point2D.Double nextpoint = new Point2D.Double(graphx + (int) graphWidth, graphy);
+        g.drawLine((int)lastpoint.x, (int)lastpoint.y, (int)nextpoint.x, (int)nextpoint.y);
+
+    }
+
     public void drawWaves() {
+
+        if (waves.size() > 0) {
+
+            double[] inputs = waves.get(0).inputs;
+
+            drawFactor(inputs, 0, 11, "Distance", 5, 5, 0);
+            drawFactor(inputs, 0, 11+8, "Lateral Velocity", 5, 5, 1);
+            drawFactor(inputs, 0, 11+8+11, "Acceleration", 5, 5, 2);
+
+        }
+
         Graphics2D g = _robot.getGraphics();
 
         double absBearing = _robot.getHeadingRadians() + _radarScanner.nme.bearingRadians;
@@ -502,7 +550,7 @@ public class NNGun extends BaseGun {
         */
 
         // Distance - Range 0 - 800, split into 11 features
-        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 200, RBFUtils.getCenters(0, 800, 11));
+        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 800, RBFUtils.getCenters(0, 800, 11));
 
         // Lateral Velocity - Range 0 - 8, split into 8 features
         double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity * 8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
