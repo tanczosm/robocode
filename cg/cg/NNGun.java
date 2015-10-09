@@ -187,11 +187,11 @@ public class NNGun extends BaseGun {
 
         topy = (height+5) * position;
         int graphx = topx, graphy = topy + height - 10, cnt = 0;
-
+        int rightBorder = graphx + ((int) graphWidth - (int)(graphWidth / featureCount));
         g.setColor(Color.GREEN);
-        g.drawLine(graphx, graphy, graphx + ((int) graphWidth), graphy);
+        g.drawLine(graphx, graphy, rightBorder, graphy);
         g.drawLine(graphx, graphy, graphx, graphy + (height-10));
-        g.drawLine(graphx + ((int) graphWidth), graphy, graphx + (int) graphWidth, graphy + (height-10));
+        g.drawLine(rightBorder, graphy, rightBorder, graphy + (height-10));
 
         g.setColor(Color.white);
         Point2D.Double lastpoint = new Point2D.Double(graphx, graphy);
@@ -210,8 +210,8 @@ public class NNGun extends BaseGun {
             cnt++;
         }
 
-        Point2D.Double nextpoint = new Point2D.Double(graphx + (int) graphWidth, graphy);
-        g.drawLine((int)lastpoint.x, (int)lastpoint.y, (int)nextpoint.x, (int)nextpoint.y);
+        //Point2D.Double nextpoint = new Point2D.Double(graphx + (int) graphWidth, graphy);
+        //g.drawLine((int)lastpoint.x, (int)lastpoint.y, (int)nextpoint.x, (int)nextpoint.y);
 
     }
 
@@ -229,6 +229,7 @@ public class NNGun extends BaseGun {
             drawFactor(inputs, 11+8+11+9+6, 7, "Time Since Vel Change", 5, 5, 5);
             drawFactor(inputs, 11+8+11+9+6+7, 7, "Forward Wall Tries", 5, 5, 6);
             drawFactor(inputs, 11+8+11+9+6+7+7, 4, "Reverse Wall Tries", 5, 5, 7);
+            //drawFactor(inputs, 11+8+11+9+6+7+7+4, 11, "Current GF", 5, 5, 8);
 
         }
 
@@ -558,7 +559,9 @@ public class NNGun extends BaseGun {
         */
 
         // Distance - Range 0 - 800, split into 11 features
-        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 800, RBFUtils.getCenters(0, 800, 11));
+        double bft = s.Distance / _radarScanner.FIRE_SPEED;
+        //double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(s.Distance, 800), 800, RBFUtils.getCenters(0, 800, 11));
+        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(bft, 105), 105, RBFUtils.getCenters(0, 105, 11));
 
         // Lateral Velocity - Range 0 - 8, split into 8 features
         double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity * 8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
@@ -584,9 +587,9 @@ public class NNGun extends BaseGun {
         double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack * 20, 20.0, RBFUtils.getCenters(0, 20, 4));
 
         // Current guess factor - Range -1.0 - 1.0, split into 11 features
-        //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 0.5, RBFUtils.getCenters(-1.0, 1.0, 11));
+        //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 1.0, RBFUtils.getCenters(-1.0, 1.0, 11));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, ffwalltries, fbwalltries); //, fcurgf);
+        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, ffwalltries, fbwalltries);
 
         // Situation s already contains normalized data
         /*
