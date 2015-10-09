@@ -16,7 +16,7 @@ import java.util.ArrayList;
  */
 public class RadarScanner {
 
-    public final static boolean LOG_TO_FILE = true;
+    public final static boolean LOG_TO_FILE = false;
     public PrintStream fileWriter = null;
 
     private AdvancedRobot _robot;
