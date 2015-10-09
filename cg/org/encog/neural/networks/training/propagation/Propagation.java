@@ -338,7 +338,7 @@ public abstract class Propagation extends BasicTraining implements Train,
 		} catch (final ArrayIndexOutOfBoundsException ex) {
 			EncogValidate.validateNetworkForTraining(this.network,
 					getTraining());
-			//throw new EncogError(ex);
+			throw new EncogError(ex);
 		}
 	}
 

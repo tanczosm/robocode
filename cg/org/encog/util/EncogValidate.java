@@ -46,14 +46,12 @@ public final class EncogValidate {
 		int inputCount = network.getFlat().getInputCount();
 		int outputCount = network.getFlat().getOutputCount();		
 
-		/*
 		if (inputCount != training.getInputSize()) {
 			throw new NeuralNetworkError("The input layer size of "
 					+ inputCount
 					+ " must match the training input size of "
 					+ training.getInputSize() + ".");
 		}
-		*/
 
 		if ((training.getIdealSize() > 0)
 				&& (outputCount != training.getIdealSize())) {
