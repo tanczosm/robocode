@@ -65,7 +65,7 @@ public class DetermineWorkload {
 	public DetermineWorkload(final int threads, final int workloadSize) {
 
 		if( workloadSize==0) {
-			throw new EncogError("Workload is of size zero.");
+			//throw new EncogError("Workload is of size zero.");
 		}
 		
 		this.workloadSize = workloadSize;

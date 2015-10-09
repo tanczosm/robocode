@@ -1,5 +1,6 @@
 package cg;
 
+import org.encog.plugin.system.SystemActivationPlugin;
 import robocode.AdvancedRobot;
 import robocode.ScannedRobotEvent;
 
