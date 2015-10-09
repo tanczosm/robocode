@@ -219,17 +219,26 @@ public class NNGun extends BaseGun {
 
         if (waves.size() > 0) {
 
-            double[] inputs = waves.get(0).inputs;
+            double[] inputs = null;
 
-            drawFactor(inputs, 0, 11, "Distance", 5, 5, 0);
-            drawFactor(inputs, 11, 8, "Lateral Velocity", 5, 5, 1);
-            drawFactor(inputs, 11+8, 11, "Acceleration", 5, 5, 2);
-            drawFactor(inputs, 11+8+11, 9, "Advancing Velocity", 5, 5, 3);
-            drawFactor(inputs, 11+8+11+9, 6, "Dist Last 10 Ticks", 5, 5, 4);
-            drawFactor(inputs, 11+8+11+9+6, 7, "Time Since Vel Change", 5, 5, 5);
-            drawFactor(inputs, 11+8+11+9+6+7, 7, "Forward Wall Tries", 5, 5, 6);
-            drawFactor(inputs, 11+8+11+9+6+7+7, 4, "Reverse Wall Tries", 5, 5, 7);
-            //drawFactor(inputs, 11+8+11+9+6+7+7+4, 11, "Current GF", 5, 5, 8);
+            for (int p = 0; p < waves.size(); p++)
+                if (waves.get(p).isReal)
+                {
+                    inputs = waves.get(p).inputs;
+                    break;
+                }
+
+            if (inputs != null) {
+                drawFactor(inputs, 0, 11, "Distance", 5, 5, 0);
+                drawFactor(inputs, 11, 8, "Lateral Velocity", 5, 5, 1);
+                drawFactor(inputs, 11 + 8, 11, "Acceleration", 5, 5, 2);
+                drawFactor(inputs, 11 + 8 + 11, 9, "Advancing Velocity", 5, 5, 3);
+                drawFactor(inputs, 11 + 8 + 11 + 9, 6, "Dist Last 10 Ticks", 5, 5, 4);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6, 7, "Time Since Vel Change", 5, 5, 5);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7, 7, "Forward Wall Tries", 5, 5, 6);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7, 4, "Reverse Wall Tries", 5, 5, 7);
+                //drawFactor(inputs, 11+8+11+9+6+7+7+4, 11, "Current GF", 5, 5, 8);
+            }
 
         }
 
@@ -383,7 +392,12 @@ public class NNGun extends BaseGun {
         */
 
         for (int i = 0; i < waves.size(); i++) {
+
             NNBullet w = (NNBullet) (waves.get(i));
+
+            if (!w.isReal)
+                continue;
+
             Point2D.Double center = new Point2D.Double(w.startX, w.startY);
 
             //int radius = (int)(w.distanceTraveled + w.bulletVelocity);
@@ -452,7 +466,7 @@ public class NNGun extends BaseGun {
                     _hitQueueInputs.add(currentWave.inputs.clone());
                     _hitQueueOutputs.add(currentWave.outputs.clone());
 
-                    if (_hitQueueInputs.size() > 15) {
+                    if (_hitQueueInputs.size() > 5) {
                         _hitQueueOutputs.remove(0);
                         _hitQueueInputs.remove(0);
                     }
@@ -508,10 +522,10 @@ public class NNGun extends BaseGun {
                 //basicTrain.pause();
                 //basicTrain.setTraining(mld);
                 if (_theData.size() > 0)
-                    basicTrain.iteration(1);
+                    basicTrain.iteration(currentWave.isReal ? 4 : 1);
 
                 if (_randomData.size() > 0)
-                    randomTrain.iteration(5);
+                    randomTrain.iteration(1);
 
                 //System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
                 //System.out.println("Random Error: " + Format.formatPercent(randomTrain.getError()));
@@ -528,9 +542,11 @@ public class NNGun extends BaseGun {
 
         //newWave.startBearing = bearing; // Update bearing to actual bearing..
 
+        newWave.fireTime = _robot.getTime();
+        newWave.isReal = true;
 
-        if (newWave != null)
-            waves.add(newWave);
+       /*if (newWave != null)
+            waves.add(newWave);*/
 
     }
 
@@ -698,6 +714,8 @@ public class NNGun extends BaseGun {
 
         newWave.fireIndex = bestGF;
         newWave.moves = getEnemyMoves();
+
+        waves.add(newWave);
 
         // this should do the opposite of the math in the WaveBullet:
         double guessfactor = (double) (bestGF - GF_ZERO) / (double) GF_ZERO;

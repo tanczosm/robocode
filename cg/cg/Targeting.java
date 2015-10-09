@@ -123,7 +123,7 @@ public class Targeting {
 
                 Bullet b;
 
-                if ((_robot.getEnergy() > (RadarScanner.FIRE_POWER + 0.01) || _radarScanner.nme.energy == 0) && (b = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
+                if ((_robot.getEnergy() > 0 /*(RadarScanner.FIRE_POWER + 0.01)*/ || _radarScanner.nme.energy == 0) && (b = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
                     _aiming = false;
                     _shotsFired++;
                     reportAccuracy();

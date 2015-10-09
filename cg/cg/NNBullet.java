@@ -11,6 +11,7 @@ public class NNBullet {
     public double direction;
     public double[] outputs;
     public double[] inputs;
+    public boolean isReal = false;
     public boolean actualHit = false;
     public int fireIndex;
 
