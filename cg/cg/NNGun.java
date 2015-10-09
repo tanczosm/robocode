@@ -462,7 +462,7 @@ public class NNGun extends BaseGun {
                     continue;
                 }
 
-                if (currentWave.actualHit) {
+                if (currentWave.isReal) {
                     _hitQueueInputs.add(currentWave.inputs.clone());
                     _hitQueueOutputs.add(currentWave.outputs.clone());
 
@@ -501,19 +501,28 @@ public class NNGun extends BaseGun {
 
                 _randomData.clear();
 
+                int fillCount = 5;
+
+                if (currentWave.isReal) {
+                    _randomData.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
+                    fillCount--;
+                }
+
                 if (_randomDataBuffer.size() > 5) {
-                    for (int j = 0; j < 5; j++) {
-                        int randIndex = (int) (_rand.nextDouble() * 4.9);
+                    for (int j = 0; j < fillCount; j++) {
+                        int randIndex = (int) (_rand.nextDouble() * _randomDataBuffer.size());
 
                         _randomData.add(_randomDataBuffer.get(randIndex));
                     }
                 }
 
+
+                /*
                 if (currentWave.actualHit) {
                     int k = _hitQueueInputs.size() - 1;
                     _randomData.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
 
-                }
+                }*/
 
 
                 //MLDataSet mld = new BasicMLDataSet(input, output);
@@ -522,7 +531,7 @@ public class NNGun extends BaseGun {
                 //basicTrain.pause();
                 //basicTrain.setTraining(mld);
                 if (_theData.size() > 0)
-                    basicTrain.iteration(currentWave.isReal ? 4 : 1);
+                    basicTrain.iteration(1);
 
                 if (_randomData.size() > 0)
                     randomTrain.iteration(1);
