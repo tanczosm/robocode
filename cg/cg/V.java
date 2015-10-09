@@ -20,7 +20,8 @@ public class V extends AdvancedRobot {
     private static double _surfStats[][][] = new double[6][5][BINS];
 
     public void run() {
-
+        // TODO: move setRobot and filewriter to NNGun and clean up file writing
+        // TODO: new print statements for debugging
         _enemyWaves = new ArrayList<EnemyWave>();
         _radarScanner.setRobot(this);
         _radarScanner.nme.waves = _enemyWaves;
