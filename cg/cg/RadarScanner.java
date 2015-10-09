@@ -183,7 +183,7 @@ public class RadarScanner {
         nme.headingRadians = e.getHeadingRadians();
         nme.distance = e.getDistance();
 
-        _LateralVelocityLast10.add(lateralVelocity);
+        _LateralVelocityLast10.add(Math.abs(enemyLateralVelocity));
         if (_LateralVelocityLast10.size() > 10)
             _LateralVelocityLast10.remove(0);
 

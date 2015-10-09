@@ -222,8 +222,13 @@ public class NNGun extends BaseGun {
             double[] inputs = waves.get(0).inputs;
 
             drawFactor(inputs, 0, 11, "Distance", 5, 5, 0);
-            drawFactor(inputs, 0, 11+8, "Lateral Velocity", 5, 5, 1);
-            drawFactor(inputs, 0, 11+8+11, "Acceleration", 5, 5, 2);
+            drawFactor(inputs, 11, 8, "Lateral Velocity", 5, 5, 1);
+            drawFactor(inputs, 11+8, 11, "Acceleration", 5, 5, 2);
+            drawFactor(inputs, 11+8+11, 9, "Advancing Velocity", 5, 5, 3);
+            drawFactor(inputs, 11+8+11+9, 6, "Dist Last 10 Ticks", 5, 5, 4);
+            drawFactor(inputs, 11+8+11+9+6, 7, "Time Since Vel Change", 5, 5, 5);
+            drawFactor(inputs, 11+8+11+9+6+7, 7, "Forward Wall Tries", 5, 5, 6);
+            drawFactor(inputs, 11+8+11+9+6+7+7, 4, "Reverse Wall Tries", 5, 5, 7);
 
         }
 
@@ -501,8 +506,11 @@ public class NNGun extends BaseGun {
 //System.out.println("Data set size is " + mld.size());
                 //basicTrain.pause();
                 //basicTrain.setTraining(mld);
-                basicTrain.iteration(10);
-                randomTrain.iteration(10);
+                if (_theData.size() > 0)
+                    basicTrain.iteration(1);
+
+                if (_randomData.size() > 0)
+                    randomTrain.iteration(5);
 
                 //System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
                 //System.out.println("Random Error: " + Format.formatPercent(randomTrain.getError()));
@@ -556,7 +564,7 @@ public class NNGun extends BaseGun {
         double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity * 8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
 
         // Acceleration - Range 0 - 1.0, split into 11 features
-        double[] faccel = RBFUtils.processDataIntoFeatures(s.Acceleration, 1.0, RBFUtils.getCenters(0, 1.0, 11));
+        double[] faccel = RBFUtils.processDataIntoFeatures(s.Acceleration, 0.1, RBFUtils.getCenters(0, 1.0, 11));
 
         // Advancing Velocity - Range -8.0 - 8.0, split into 9 features
         double advancingVelocity = Math.min(16d, Math.max(-16d, s.AdvancingVelocity * 16d)); // +/- 8.0

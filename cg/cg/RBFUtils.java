@@ -26,12 +26,25 @@ public class RBFUtils {
 
     public static double[] processDataIntoFeatures(double data, double width, double[] centers) {
         double[] result = new double[centers.length];
+        double maxdiff = 0;
 
         for (int i = 0; i < centers.length; i++) {
             result[i] = Math.pow(data - centers[i], 2) / width;
             result[i] = Math.exp(-result[i]);
+            /*
+            double diff = Math.abs(data - centers[i]);
+            if (diff > maxdiff)
+                maxdiff = diff;
+            */
         }
-
+/*
+        for (int i = 0; i < centers.length; i++) {
+            //result[i] = Math.pow(data - centers[i], 2) / width;
+            //result[i] = Math.exp(-result[i]);
+            double diff = Math.abs(data - centers[i]) / maxdiff;
+            result[i] = 1-diff;
+        }
+*/
         return result;
     }
 
