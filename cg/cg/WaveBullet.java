@@ -70,7 +70,7 @@ public class WaveBullet {
             */
             int index = getStatIndex(enemyX, enemyY);
 
-            if (index < 0 || index > returnSegment.length)
+            if (index < 0 || index > returnSegment.length-1)
                 return true;  // Bail.. must be dealing with faulty data on this check - signal to remove it
 
             returnSegment[index]++;
