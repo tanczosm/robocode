@@ -700,6 +700,29 @@ public class NNGun extends BaseGun {
         // TODO: USE NEURAL NET TO FIND BETTER GF
         //System.out.println("Basic: " + Format.formatPercent(basicTrain.getError()));
 
+        // First let's calculate the lowest and highest possible guessfactors
+
+        newWave.moves = getEnemyMoves();
+
+        double lowBearing = CTUtils.absoluteBearing(new Point2D.Double(x, y), newWave.moves[0].location);
+        double highBearing = CTUtils.absoluteBearing(new Point2D.Double(x, y), newWave.moves[newWave.moves.length - 1].location);
+
+        int lowGF = (int) Math.floor((newWave.getGuessFactor(newWave.moves[0].location.getX(), newWave.moves[0].location.getY()) + 1) * GF_ZERO);
+        int highGF = (int) Math.ceil((newWave.getGuessFactor(newWave.moves[newWave.moves.length - 1].location.getX(), newWave.moves[newWave.moves.length - 1].location.getY()) + 1) * GF_ZERO);
+
+        if (lowGF > highGF)
+        {
+            int swap = lowGF;
+            lowGF = highGF;
+            highGF = swap;
+        }
+        newWave.lowGF = (double) (lowGF - GF_ZERO) / (double) GF_ZERO;
+        newWave.highGF = (double) (highGF - GF_ZERO) / (double) GF_ZERO;
+
+        System.out.println("LowGF: " + lowGF + ", highGF: " + highGF);
+
+
+
         BasicMLData inp = new BasicMLData(situationInput);
 
         double[] outgf = basicNetwork.compute(inp).getData();
@@ -708,7 +731,7 @@ public class NNGun extends BaseGun {
 
 
         int maxgf = 31;
-        for (int i = 0; i < outgf.length; i++) {
+        for (int i = lowGF; i <= highGF && i < outgf.length; i++) {
             //outgf[i] = 1.0 - outgf[i];
 
             if (outgf[i] + randoutgf[i] > outgf[maxgf] + randoutgf[maxgf]) {
@@ -722,7 +745,7 @@ public class NNGun extends BaseGun {
         //bestGF = getCentroid(outgf);
 
         newWave.fireIndex = bestGF;
-        newWave.moves = getEnemyMoves();
+
 
         waves.add(newWave);
 
@@ -730,8 +753,12 @@ public class NNGun extends BaseGun {
         double guessfactor = (double) (bestGF - GF_ZERO) / (double) GF_ZERO;
         currentGuessFactor = guessfactor;
 
+        /*
         double angleOffset = direction < 0 ? -(guessfactor * newWave.lowGF * newWave.maxEscapeAngle) :
                 (guessfactor * newWave.highGF * newWave.maxEscapeAngle);
+        */
+        double angleOffset = direction < 0 ? -(guessfactor * newWave.maxEscapeAngle) :
+                (guessfactor * newWave.maxEscapeAngle);
 
         return angleOffset;
 
