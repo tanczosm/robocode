@@ -11,9 +11,12 @@ import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import org.encog.util.Format;
 import robocode.AdvancedRobot;
+import robocode.RobocodeFileOutputStream;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,6 +57,8 @@ public class NNGun extends BaseGun {
     private ArrayList<MLDataPair> _randomDataBuffer;
 
     private Random _rand;
+
+    public PrintStream fileWriter = null;
 
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
@@ -98,6 +103,8 @@ public class NNGun extends BaseGun {
 
         basicTrain.setBatchSize(1);
         randomTrain.setBatchSize(1);
+
+        setRobot();
     }
 
     public String getName() {
@@ -178,20 +185,19 @@ public class NNGun extends BaseGun {
 
     }
 
-    public void drawFactor(double[] data, int factorStart, int featureCount, String featureName, int topx, int topy, int position)
-    {
+    public void drawFactor(double[] data, int factorStart, int featureCount, String featureName, int topx, int topy, int position) {
         Graphics2D g = _robot.getGraphics();
 
         double graphWidth = 150;
         int height = 50;
 
-        topy = (height+5) * position;
+        topy = (height + 5) * position;
         int graphx = topx, graphy = topy + height - 10, cnt = 0;
-        int rightBorder = graphx + ((int) graphWidth - (int)(graphWidth / featureCount));
+        int rightBorder = graphx + ((int) graphWidth - (int) (graphWidth / featureCount));
         g.setColor(Color.GREEN);
         g.drawLine(graphx, graphy, rightBorder, graphy);
-        g.drawLine(graphx, graphy, graphx, graphy + (height-10));
-        g.drawLine(rightBorder, graphy, rightBorder, graphy + (height-10));
+        g.drawLine(graphx, graphy, graphx, graphy + (height - 10));
+        g.drawLine(rightBorder, graphy, rightBorder, graphy + (height - 10));
 
         g.setColor(Color.white);
         Point2D.Double lastpoint = new Point2D.Double(graphx, graphy);
@@ -199,11 +205,11 @@ public class NNGun extends BaseGun {
         g.setFont(new Font("Verdana", Font.PLAIN, 10));
         g.drawString(featureName, graphx, graphy - 10);
 
-        for (int i = factorStart; i < factorStart+featureCount && i < data.length; i++) {
+        for (int i = factorStart; i < factorStart + featureCount && i < data.length; i++) {
             g.setColor(Color.MAGENTA);
             //g.drawOval(graphx + (int) (cnt * (graphWidth / featureCount)) - 1, graphy + (int) (data[i] * 20), 2, 2);
-            Point2D.Double nextpoint = new Point2D.Double(graphx + (int) (cnt * (graphWidth / featureCount)) - 1, graphy + (int) (data[i] * (height-10)));
-            g.drawLine((int)lastpoint.x, (int)lastpoint.y, (int)nextpoint.x, (int)nextpoint.y);
+            Point2D.Double nextpoint = new Point2D.Double(graphx + (int) (cnt * (graphWidth / featureCount)) - 1, graphy + (int) (data[i] * (height - 10)));
+            g.drawLine((int) lastpoint.x, (int) lastpoint.y, (int) nextpoint.x, (int) nextpoint.y);
 
             lastpoint = nextpoint;
 
@@ -222,8 +228,7 @@ public class NNGun extends BaseGun {
             double[] inputs = null;
 
             for (int p = 0; p < waves.size(); p++)
-                if (waves.get(p).isReal)
-                {
+                if (waves.get(p).isReal) {
                     inputs = waves.get(p).inputs;
                     break;
                 }
@@ -544,6 +549,8 @@ public class NNGun extends BaseGun {
             }
 
         }
+        if (_lastSituation != null)
+            writeLogLine(_lastSituation);
     }
 
     public void takeVirtualShot(Situation s, double bearing) {
@@ -710,8 +717,7 @@ public class NNGun extends BaseGun {
         int lowGF = (int) Math.floor((newWave.getGuessFactor(newWave.moves[0].location.getX(), newWave.moves[0].location.getY()) + 1) * GF_ZERO);
         int highGF = (int) Math.ceil((newWave.getGuessFactor(newWave.moves[newWave.moves.length - 1].location.getX(), newWave.moves[newWave.moves.length - 1].location.getY()) + 1) * GF_ZERO);
 
-        if (lowGF > highGF)
-        {
+        if (lowGF > highGF) {
             int swap = lowGF;
             lowGF = highGF;
             highGF = swap;
@@ -719,8 +725,7 @@ public class NNGun extends BaseGun {
         newWave.lowGF = (double) (lowGF - GF_ZERO) / (double) GF_ZERO;
         newWave.highGF = (double) (highGF - GF_ZERO) / (double) GF_ZERO;
 
-        System.out.println("LowGF: " + lowGF + ", highGF: " + highGF);
-
+        //System.out.println("LowGF: " + lowGF + ", highGF: " + highGF);
 
 
         BasicMLData inp = new BasicMLData(situationInput);
@@ -763,5 +768,41 @@ public class NNGun extends BaseGun {
         return angleOffset;
 
 
+    }
+
+    public void writeLogLine(Situation s) {
+        // { LateralVelocity, Acceleration, NormalizedDistance, WallTriesForward, WallTriesBack, AdvancingVelocity };
+
+        double[] point = s.getPoint();
+        String output = "";
+
+        output += s.GuessFactor + ",";
+        output += s.GuessFactorChosen;
+
+        for (int i = 0; i < point.length; i++) {
+            if (output.length() != 0)
+                output += ",";
+
+            output += point[i];
+        }
+
+        fileWriter.println(output);
+
+        //if (fileWriter.checkError())
+        //    System.out.println("I could not write the count!");
+    }
+
+    public void setRobot() {
+        if (fileWriter == null) {
+            try {
+                fileWriter = new PrintStream(new RobocodeFileOutputStream(_robot.getDataFile("count.csv")));
+            } catch (IOException e) {
+                //System.out.println("Unable to write to variables log. " + e.getMessage());
+            }
+        }
+    }
+
+    public void onBattleEnded() {
+        fileWriter.close();
     }
 }
