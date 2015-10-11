@@ -77,11 +77,19 @@ public class NNBullet {
             //System.out.println("Correct gf is " + gf);
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            outputs = RBFUtils.processDataIntoFeatures(gf, 0.1, centers);
+            outputs = RBFUtils.processDataIntoFeatures(gf, 0.05, centers);
             //System.out.println("Output gf is " + Arrays.toString(outputs));
 
             if (getCurrentLocation((int) currentTime).distance(enemyX, enemyY) <= 18) {
                 actualHit = true;
+
+                // System.out.println("Inverting outputs");
+                // Invert the outputs to battle wave surfers more effectively (?)
+                for (int i = 0; i < outputs.length; i++)
+                {
+                    //outputs[i] = 1.0 - outputs[i];
+                }
+
             }
 
             //waveGuessFactors[(int)Math.round((Utils.normalRelativeAngle(absoluteBearing(firePosition, RaikoGun.enemyLocation) - enemyAbsBearing))/bearingDirection + GF_ZERO)]++;

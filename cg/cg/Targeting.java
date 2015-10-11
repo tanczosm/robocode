@@ -117,7 +117,7 @@ public class Targeting {
             // Check to see if gun finished rotating and we can fire
             _aiming = true;
             if (bearing < Double.MAX_VALUE
-                    && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(12d / _radarScanner.nme.distance) || distance < 70d)
+                    && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(16d / _radarScanner.nme.distance) || distance < 70d)
                     ) {
                 //s.IsRealBullet = true;
 
