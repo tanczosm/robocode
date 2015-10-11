@@ -60,6 +60,9 @@ public class NNGun extends BaseGun {
 
     public PrintStream fileWriter = null;
 
+    double lastInput;
+    boolean isDuplicate = false;
+
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
         _radarScanner = radarScanner;
@@ -230,6 +233,16 @@ public class NNGun extends BaseGun {
             for (int p = 0; p < waves.size(); p++)
                 if (waves.get(p).isReal) {
                     inputs = waves.get(p).inputs;
+
+                    if (inputs[1] == lastInput)
+                        isDuplicate = true;
+
+                    if (!isDuplicate)
+                        writeLogLine(inputs);
+
+                    inputs[1] = lastInput;
+
+                    isDuplicate = false;
                     break;
                 }
 
@@ -549,8 +562,6 @@ public class NNGun extends BaseGun {
             }
 
         }
-        if (_lastSituation != null)
-            writeLogLine(_lastSituation);
     }
 
     public void takeVirtualShot(Situation s, double bearing) {
@@ -770,26 +781,14 @@ public class NNGun extends BaseGun {
 
     }
 
-    public void writeLogLine(Situation s) {
-        // { LateralVelocity, Acceleration, NormalizedDistance, WallTriesForward, WallTriesBack, AdvancingVelocity };
-
-        double[] point = s.getPoint();
+    public void writeLogLine(double[] inputs) {
         String output = "";
 
-        output += s.GuessFactor + ",";
-        output += s.GuessFactorChosen;
-
-        for (int i = 0; i < point.length; i++) {
-            if (output.length() != 0)
-                output += ",";
-
-            output += point[i];
+        for (int i = 0; i < inputs.length; i++) {
+            output += inputs[i] + ",";
         }
 
         fileWriter.println(output);
-
-        //if (fileWriter.checkError())
-        //    System.out.println("I could not write the count!");
     }
 
     public void setRobot() {
