@@ -50,6 +50,8 @@ public class RadarScanner {
     public double _lastVelocity = 0;
     public double _lastVelocityChange = 0;
     public double _lastLatVel = 0;
+    public double _lastDirection = 1;
+    public int _DirectionChangeTime = 0;
 
     public ArrayList<Double> _LateralVelocityLast10;
 
@@ -134,7 +136,8 @@ public class RadarScanner {
         double absVelocity = Math.abs(velocity);
         double enemyLateralVelocity = velocity * Math.sin(relativeHeading);
         double advancingVelocity = -Math.cos(relativeHeading) * velocity;
-        double direction = lateralVelocity < 0 ? -1 : 1;
+        double direction = enemyLateralVelocity < 0 ? -1 : 1;
+
 
         double energy = _robot.getEnergy();
         //double shotPower = CrushTurtle.FIRE_POWER;
@@ -170,6 +173,8 @@ public class RadarScanner {
         double wallTries = getWallTries(enemyHeading, direction, x, y, distance);
         double wallTriesBack = getWallTries(enemyHeading, -direction, x, y, distance);
 
+
+
         enemyLateralVelocity = Math.abs(enemyLateralVelocity);  // Two lateral velocities seem to be going on here..
 
         nme.lastlocation = nme.location;
@@ -192,6 +197,12 @@ public class RadarScanner {
             LatVelLast10 += _LateralVelocityLast10.get(k);
         }
 
+        if (_lastDirection != direction)
+        {
+            _DirectionChangeTime = (int)_robot.getTime();
+        }
+        _lastDirection = direction;
+
         Situation scan = new Situation();
         scan.Time = time - 1;
         scan.LateralVelocity = enemyLateralVelocity / 8d;
@@ -205,6 +216,7 @@ public class RadarScanner {
         scan.Velocity = absVelocity / 8d;
         scan.Acceleration = acceleration / 2d;
         scan.SinceVelocityChange = velocityChangeValue / 4d;
+        scan.SinceDirectionChange = _robot.getTime() - _DirectionChangeTime;
         scan.Direction = direction;
         scan.EnemyHeading = enemyHeading;
         scan.RX = x;

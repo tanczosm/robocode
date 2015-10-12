@@ -30,6 +30,7 @@ public class Situation {
     public double Acceleration;
     public double Velocity;
     public double SinceVelocityChange;
+    public double SinceDirectionChange;
     public double WallTriesForward;
     public double WallTriesBack;
     public double Direction;

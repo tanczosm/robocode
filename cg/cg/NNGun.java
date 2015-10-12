@@ -37,7 +37,7 @@ public class NNGun extends BaseGun {
     public BasicNetwork randomNetwork;
     public Backpropagation randomTrain;
 
-    public static final int INPUT_LENGTH = 63;
+    public static final int INPUT_LENGTH = 70;
     public static final int OUTPUT_LENGTH = 61;
 
     public static final int GF_ZERO = 30; // 23; //15;
@@ -255,7 +255,7 @@ public class NNGun extends BaseGun {
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6, 7, "Time Since Vel Change", 5, 5, 5);
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7, 7, "Forward Wall Tries", 5, 5, 6);
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7, 4, "Reverse Wall Tries", 5, 5, 7);
-                //drawFactor(inputs, 11+8+11+9+6+7+7+4, 11, "Current GF", 5, 5, 8);
+                drawFactor(inputs, 11+8+11+9+6+7+7+4, 7, "Since Direction Change", 5, 5, 8);
             }
 
         }
@@ -621,7 +621,7 @@ public class NNGun extends BaseGun {
 
 
         // SinceVelocityChange - Range 0 - 1, split into 7 features
-        double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.5, RBFUtils.getCenters(0, 1, 7));
+        double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.05, RBFUtils.getCenters(0, 1, 7));
 
         // Wall Tries Forward - Range 0.0 - 20.0, split into 7 features
         double[] ffwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesForward * 20, 20.0, RBFUtils.getCenters(0, 20, 7));
@@ -629,10 +629,14 @@ public class NNGun extends BaseGun {
         // Wall Tries Backward - Range 0.0 - 20.0, split into 4 features
         double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack * 20, 20.0, RBFUtils.getCenters(0, 20, 4));
 
+        // SinceDirectionChange - Range 0 - bft, split into 7 features
+        double[] fsincedirch = RBFUtils.processDataIntoFeatures(Math.min(s.SinceDirectionChange, bft), 1, RBFUtils.getCenters(0, bft, 7));
+
+
         // Current guess factor - Range -1.0 - 1.0, split into 11 features
         //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 1.0, RBFUtils.getCenters(-1.0, 1.0, 11));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, ffwalltries, fbwalltries);
+        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, ffwalltries, fbwalltries, fsincedirch);
 
         // Situation s already contains normalized data
         /*
