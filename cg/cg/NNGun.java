@@ -479,7 +479,15 @@ public class NNGun extends BaseGun {
                     //System.out.println("Inputs length mismatch - should be " + currentWave.inputs.length);
                     continue;
                 }
-
+                /*
+                if (currentWave.actualHit && currentWave.isReal)
+                {
+                    for (int k = 0; k < currentWave.outputs.length; k++)
+                    {
+                        currentWave.outputs[k] = 1.0 - currentWave.outputs[k];
+                    }
+                }
+                */
                 if (currentWave.isReal) {
                     _hitQueueInputs.add(currentWave.inputs.clone());
                     _hitQueueOutputs.add(currentWave.outputs.clone());
