@@ -63,6 +63,8 @@ public class NNGun extends BaseGun {
     double lastInput;
     boolean isDuplicate = false;
 
+    boolean saveNetwork = false;
+
     public NNGun(AdvancedRobot robot, RadarScanner radarScanner) {
         _robot = robot;
         _radarScanner = radarScanner;
@@ -73,8 +75,8 @@ public class NNGun extends BaseGun {
         _randomDataBuffer = new ArrayList<MLDataPair>();
 
         _rand = new Random();
-
-        basicNetwork = loadNetwork("basicNetwork.dat");
+        if (saveNetwork)
+            basicNetwork = loadNetwork("basicNetwork.dat");
 
         if (basicNetwork != null)
             System.out.println("Network #1 online and ready to rock");
@@ -89,8 +91,8 @@ public class NNGun extends BaseGun {
             basicNetwork.reset();
             basicNetwork.reset(1000);
         }
-
-        randomNetwork = loadNetwork("randomNetwork.dat");
+        if (saveNetwork)
+            randomNetwork = loadNetwork("randomNetwork.dat");
 
         if (randomNetwork != null)
             System.out.println("Network #2 online and ready to rock");
@@ -889,9 +891,10 @@ public class NNGun extends BaseGun {
     public @Override void onBattleEnded() {
 
         System.out.println("Saving network to disk");
-        saveNetwork("basicNetwork.dat", basicNetwork);
-        saveNetwork("randomNetwork.dat", randomNetwork);
-
+        if (saveNetwork) {
+            saveNetwork("basicNetwork.dat", basicNetwork);
+            saveNetwork("randomNetwork.dat", randomNetwork);
+        }
         //fileWriter.close();
     }
 }
