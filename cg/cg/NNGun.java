@@ -757,6 +757,10 @@ public class NNGun extends BaseGun {
         double[] randoutgf = randomNetwork.compute(inp).getData();
         //System.out.println("Guessfactor Output: " + Arrays.toString(outgf));
 
+        if (randoutgf.length != outgf.length)
+        {
+            randoutgf = new double[outgf.length];
+        }
 
         int maxgf = 31;
         for (int i = lowGF; i <= highGF && i < outgf.length; i++) {

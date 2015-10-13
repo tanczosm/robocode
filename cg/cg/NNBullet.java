@@ -77,7 +77,22 @@ public class NNBullet {
             //System.out.println("Correct gf is " + gf);
             double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
 
-            outputs = RBFUtils.processDataIntoFeatures(gf, 0.05, centers);
+            // Calculate the effective bot width at distance as that will be needed to regulate
+            // the width of the features
+            double gf1 = getGuessFactor(enemyX-18, enemyY-18);
+            double gf2 = getGuessFactor(enemyX-18, enemyY+18);
+            double gf3 = getGuessFactor(enemyX+18, enemyY-18);
+            double gf4 = getGuessFactor(enemyX+18, enemyY+18);
+//            System.out.println("gf1-4: " + gf1 + ", " + gf2 + ", " + gf3 + ", " + gf4);
+
+            double gfmin = Math.min(Math.min(gf1, gf2), Math.min(gf3, gf4));
+            double gfmax = Math.max(Math.max(gf1, gf2), Math.max(gf3, gf4));
+            double gfwidth = (gfmax-gfmin) * 0.25;
+
+            //System.out.println("gfminmax: " + gfmin + ", " + gfmax + ", diff: " + gfwidth);
+
+            outputs = RBFUtils.processDataIntoFeatures(gf, gfwidth, centers);
+            //outputs = RBFUtils.processDataIntoFeatures(gf, 0.05, centers);
             //System.out.println("Output gf is " + Arrays.toString(outputs));
 
             if (getCurrentLocation((int) currentTime).distance(enemyX, enemyY) <= 18) {
