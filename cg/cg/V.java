@@ -1,6 +1,7 @@
 package cg;
 
 import robocode.AdvancedRobot;
+import robocode.BattleEndedEvent;
 import robocode.ScannedRobotEvent;
 
 import java.awt.geom.Point2D;
@@ -43,6 +44,13 @@ public class V extends AdvancedRobot {
             scan();
 
         } while (true);
+    }
+
+    @Override
+    public void onBattleEnded(BattleEndedEvent event) {
+        System.out.println("Battle ended..");
+
+        _targeting.onBattleEnded();
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {

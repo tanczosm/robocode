@@ -57,6 +57,12 @@ public class Targeting {
         this._battleRules = battleRules;
     }
 
+    public void onBattleEnded() {
+        for (BaseGun gun : guns) {
+            gun.onBattleEnded();
+        }
+    }
+
     public void selectGun() {
 
         _currentGun = guns.get(2);

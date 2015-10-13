@@ -10,13 +10,13 @@ import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import org.encog.util.Format;
+import org.encog.util.obj.SerializeObject;
 import robocode.AdvancedRobot;
 import robocode.RobocodeFileOutputStream;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,23 +74,37 @@ public class NNGun extends BaseGun {
 
         _rand = new Random();
 
-        // create the basic network
-        basicNetwork = new BasicNetwork();
-        basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
-        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
-        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
-        basicNetwork.getStructure().finalizeStructure();
-        basicNetwork.reset();
-        basicNetwork.reset(1000);
+        basicNetwork = loadNetwork("basicNetwork.dat");
 
-        // create the basic network
-        randomNetwork = new BasicNetwork();
-        randomNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
-        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
-        randomNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
-        randomNetwork.getStructure().finalizeStructure();
-        randomNetwork.reset();
-        randomNetwork.reset(1000);
+        if (basicNetwork != null)
+            System.out.println("Network #1 online and ready to rock");
+
+        if (basicNetwork == null) {
+            // create the basic network
+            basicNetwork = new BasicNetwork();
+            basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+            //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+            basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+            basicNetwork.getStructure().finalizeStructure();
+            basicNetwork.reset();
+            basicNetwork.reset(1000);
+        }
+
+        randomNetwork = loadNetwork("randomNetwork.dat");
+
+        if (randomNetwork != null)
+            System.out.println("Network #2 online and ready to rock");
+
+        if (randomNetwork == null) {
+            // create the basic network
+            randomNetwork = new BasicNetwork();
+            randomNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+            //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+            randomNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+            randomNetwork.getStructure().finalizeStructure();
+            randomNetwork.reset();
+            randomNetwork.reset(1000);
+        }
 
         _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
         _randomData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
@@ -230,7 +244,10 @@ public class NNGun extends BaseGun {
 
             double[] inputs = null;
 
+
             for (int p = 0; p < waves.size(); p++)
+
+                /*
                 if (waves.get(p).isReal) {
                     inputs = waves.get(p).inputs;
 
@@ -244,7 +261,7 @@ public class NNGun extends BaseGun {
 
                     isDuplicate = false;
                     break;
-                }
+                }*/
 
             if (inputs != null) {
                 drawFactor(inputs, 0, 11, "Distance", 5, 5, 0);
@@ -766,6 +783,9 @@ public class NNGun extends BaseGun {
         for (int i = lowGF; i <= highGF && i < outgf.length; i++) {
             //outgf[i] = 1.0 - outgf[i];
 
+            if (i < 0 || i > outgf.length-1)
+                continue;
+
             if (outgf[i] + randoutgf[i] > outgf[maxgf] + randoutgf[maxgf]) {
                 maxgf = i;
             }
@@ -808,16 +828,70 @@ public class NNGun extends BaseGun {
     }
 
     public void setRobot() {
+        /*
         if (fileWriter == null) {
             try {
                 fileWriter = new PrintStream(new RobocodeFileOutputStream(_robot.getDataFile("count.csv")));
             } catch (IOException e) {
                 //System.out.println("Unable to write to variables log. " + e.getMessage());
             }
+        }*/
+    }
+
+    public void saveNetwork (String filename, BasicNetwork n)
+    {
+
+        try {
+
+            File df = _robot.getDataFile(filename);
+
+            RobocodeFileOutputStream fos = null;
+            ObjectOutputStream out = null;
+
+            fos = new RobocodeFileOutputStream(df);
+            out = new ObjectOutputStream(fos);
+            out.writeObject(n);
+            out.close();
+
+        }
+        catch (IOException e)
+        {
+            System.out.println("Unable to serialize object");
         }
     }
 
-    public void onBattleEnded() {
-        fileWriter.close();
+    public BasicNetwork loadNetwork (String filename)
+    {
+        Serializable object = null;
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+
+        try {
+            fis = new FileInputStream(_robot.getDataFile(filename));
+            in = new ObjectInputStream(fis);
+            try {
+                object = (Serializable) in.readObject();
+            }
+            catch (ClassNotFoundException cnf)
+            {
+
+            }
+            in.close();
+        }
+        catch (IOException e)
+        {
+            System.out.println("Unable to open \"" + filename + "\"");
+        }
+
+        return (BasicNetwork)object;
+    }
+
+    public @Override void onBattleEnded() {
+
+        System.out.println("Saving network to disk");
+        saveNetwork("basicNetwork.dat", basicNetwork);
+        saveNetwork("randomNetwork.dat", randomNetwork);
+
+        //fileWriter.close();
     }
 }

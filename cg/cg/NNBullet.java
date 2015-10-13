@@ -89,6 +89,7 @@ public class NNBullet {
             double gfmax = Math.max(Math.max(gf1, gf2), Math.max(gf3, gf4));
             double gfwidth = (gfmax-gfmin) * 0.25;
 
+            gfwidth = 0.05;
             //System.out.println("gfminmax: " + gfmin + ", " + gfmax + ", diff: " + gfwidth);
 
             outputs = RBFUtils.processDataIntoFeatures(gf, gfwidth, centers);
