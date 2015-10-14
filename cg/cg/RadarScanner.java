@@ -173,8 +173,8 @@ public class RadarScanner {
         double wallTries = getWallTries(enemyHeading, direction, x, y, distance);
         double wallTriesBack = getWallTries(enemyHeading, -direction, x, y, distance);
 
-        double wallRadialDistanceForward = CTUtils.wallDistance(x,y,distance,absBearing,1);
-        double wallRadialDistanceBack = CTUtils.wallDistance(x,y,distance,absBearing,-1);
+        double wallRadialDistanceForward = CTUtils.wallDistance(x,y,distance,absBearing,(int)direction);
+        double wallRadialDistanceBack = CTUtils.wallDistance(x,y,distance,absBearing,(int)-direction);
 
 
         enemyLateralVelocity = Math.abs(enemyLateralVelocity);  // Two lateral velocities seem to be going on here..
