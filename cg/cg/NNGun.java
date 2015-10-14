@@ -58,6 +58,7 @@ public class NNGun extends BaseGun {
     private ArrayList<MLDataPair> _randomDataBuffer;
 
     private Random _rand;
+    private double _errAvg;
 
     public PrintStream fileWriter = null;
 
@@ -588,7 +589,7 @@ public class NNGun extends BaseGun {
 
                 _theData.clear();
 
-                double errSum = 0, errAvg = 0;
+                double errSum = 0;
                 int count = 0, errCount = 0;
 
                 do {
@@ -601,7 +602,7 @@ public class NNGun extends BaseGun {
                         BasicMLDataPair pair = new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k)));
 
                         double err = calculateError(pair);
-                        System.out.println("Err: " + err);
+                        //System.out.println("Err: " + err);
 
                         if (err > 0.05) {
                             errSum += err;
@@ -611,15 +612,15 @@ public class NNGun extends BaseGun {
 
                     }
 
-
                     if (_theData.size() > 0)
                         basicTrain.iteration(1);
 
-                    errAvg = errSum / errCount;
+                    _errAvg = (errCount == 0 ? 0 : errSum / errCount);
                     count++;
                 }
-                while (count < 4 && errAvg > 0.05);
-                //System.out.println(count == 8 ? 8 : "");
+                while (count < 2 && _errAvg > 0.05);
+
+                System.out.println("Average Error: " + _errAvg);
 
 
 
