@@ -79,18 +79,21 @@ public class NNBullet {
 
             // Calculate the effective bot width at distance as that will be needed to regulate
             // the width of the features
+            /*
             double gf1 = getGuessFactor(enemyX-18, enemyY-18);
             double gf2 = getGuessFactor(enemyX-18, enemyY+18);
             double gf3 = getGuessFactor(enemyX+18, enemyY-18);
             double gf4 = getGuessFactor(enemyX+18, enemyY+18);
-//            System.out.println("gf1-4: " + gf1 + ", " + gf2 + ", " + gf3 + ", " + gf4);
 
             double gfmin = Math.min(Math.min(gf1, gf2), Math.min(gf3, gf4));
             double gfmax = Math.max(Math.max(gf1, gf2), Math.max(gf3, gf4));
             double gfwidth = (gfmax-gfmin) * 0.25;
+*/
+            double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
-            gfwidth = 0.05;
+            //gfwidth = 0.05;
             //System.out.println("gfminmax: " + gfmin + ", " + gfmax + ", diff: " + gfwidth);
+            //System.out.println("gfwidth: " + gfwidth);
 
             outputs = RBFUtils.processDataIntoFeatures(gf, gfwidth, centers);
             //outputs = RBFUtils.processDataIntoFeatures(gf, 0.05, centers);

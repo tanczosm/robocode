@@ -13,6 +13,36 @@ public class CTUtils {
 
     public static MovSim moveSimulator;
 
+    public static final double HALF_PI = Math.PI / 2;
+    public static final double WALKING_STICK = 120;
+    public static final double WALL_MARGIN = 18;
+    public static final double S = WALL_MARGIN;
+    public static final double W = WALL_MARGIN;
+    public static final double N = 600 - WALL_MARGIN;
+    public static final double E = 800 - WALL_MARGIN;
+
+    // eDist  = the distance from you to the enemy
+    // eAngle = the absolute angle from you to the enemy
+    // oDir   =  1 for the clockwise orbit distance
+    //          -1 for the counter-clockwise orbit distance
+    // returns: the positive orbital distance (in radians) the enemy can travel
+    //          before hitting a wall (possibly infinity).
+    public static double wallDistance(double playerX, double playerY, double eDist, double eAngle, int oDir) {
+        return Math.min(Math.min(Math.min(
+                                distanceWest(N - playerY, eDist, eAngle - HALF_PI, oDir),
+                                distanceWest(E - playerX, eDist, eAngle + Math.PI, oDir)),
+                        distanceWest(playerY - S, eDist, eAngle + HALF_PI, oDir)),
+                distanceWest(playerX - W, eDist, eAngle, oDir));
+    }
+
+    public static double distanceWest(double toWall, double eDist, double eAngle, int oDir) {
+        if (eDist <= toWall) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double wallAngle = Math.acos(-oDir * toWall / eDist) + oDir * HALF_PI;
+        return Utils.normalAbsoluteAngle(oDir * (wallAngle - eAngle));
+    }
+
     // CREDIT: from CassiusClay, by PEZ
     //   - returns point length away from sourceLocation, at angle
     // robowiki.net?CassiusClay

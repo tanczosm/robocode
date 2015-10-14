@@ -208,7 +208,7 @@ public class NNGun extends BaseGun {
         Graphics2D g = _robot.getGraphics();
 
         double graphWidth = 150;
-        int height = 50;
+        int height = 45;
 
         topy = (height + 5) * position;
         int graphx = topx, graphy = topy + height - 10, cnt = 0;
@@ -249,32 +249,33 @@ public class NNGun extends BaseGun {
 
             for (int p = 0; p < waves.size(); p++)
 
-                /*
                 if (waves.get(p).isReal) {
                     inputs = waves.get(p).inputs;
 
+                    /*
                     if (inputs[1] == lastInput)
                         isDuplicate = true;
 
                     if (!isDuplicate)
                         writeLogLine(inputs);
-
+                    */
                     inputs[1] = lastInput;
 
                     isDuplicate = false;
                     break;
-                }*/
+                }
 
             if (inputs != null) {
-                drawFactor(inputs, 0, 11, "Distance", 5, 5, 0);
-                drawFactor(inputs, 11, 8, "Lateral Velocity", 5, 5, 1);
-                drawFactor(inputs, 11 + 8, 11, "Acceleration", 5, 5, 2);
-                drawFactor(inputs, 11 + 8 + 11, 9, "Advancing Velocity", 5, 5, 3);
-                drawFactor(inputs, 11 + 8 + 11 + 9, 6, "Dist Last 10 Ticks", 5, 5, 4);
-                drawFactor(inputs, 11 + 8 + 11 + 9 + 6, 7, "Time Since Vel Change", 5, 5, 5);
-                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7, 7, "Forward Wall Tries", 5, 5, 6);
-                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7, 4, "Reverse Wall Tries", 5, 5, 7);
-                drawFactor(inputs, 11+8+11+9+6+7+7+4, 7, "Since Direction Change", 5, 5, 8);
+                drawFactor(inputs, 0, 11, "Distance", 0, 0, 0);
+                drawFactor(inputs, 11, 8, "Lateral Velocity", 0, 0, 1);
+                drawFactor(inputs, 11 + 8, 11, "Acceleration", 0, 0, 2);
+                drawFactor(inputs, 11 + 8 + 11, 9, "Advancing Velocity", 0, 0, 3);
+                drawFactor(inputs, 11 + 8 + 11 + 9, 6, "Dist Last 10 Ticks", 0, 0, 4);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6, 7, "Time Since Vel Change", 0, 0, 5);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7, 7, "Since Direction Change", 0, 0, 6);
+                drawFactor(inputs, 11+8+11+9+6+7+7, 7, "Forward Wall Radians", 0, 0, 7);
+                drawFactor(inputs, 11+8+11+9+6+7+7+7, 4, "Reverse Wall Radians", 0, 0, 8);
+
             }
 
         }
@@ -634,14 +635,14 @@ public class NNGun extends BaseGun {
         double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(bft, 105), 105, RBFUtils.getCenters(0, 105, 11));
 
         // Lateral Velocity - Range 0 - 8, split into 8 features
-        double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity * 8.0, 8.0, RBFUtils.getCenters(0, 8, 8));
+        double[] flatvel = RBFUtils.processDataIntoFeatures(s.LateralVelocity * 8.0, 2.0, RBFUtils.getCenters(0, 8, 8));
 
         // Acceleration - Range 0 - 1.0, split into 11 features
-        double[] faccel = RBFUtils.processDataIntoFeatures(s.Acceleration, 0.1, RBFUtils.getCenters(0, 1.0, 11));
+        double[] faccel = RBFUtils.processDataIntoFeatures(s.Acceleration, 0.05, RBFUtils.getCenters(0, 1.0, 11));
 
         // Advancing Velocity - Range -8.0 - 8.0, split into 9 features
-        double advancingVelocity = Math.min(16d, Math.max(-16d, s.AdvancingVelocity * 16d)); // +/- 8.0
-        double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 16.0, RBFUtils.getCenters(-8d, +8d, 9));
+        double advancingVelocity = Math.min(1.0d, Math.max(-1.0d, s.AdvancingVelocity * 1.0d)); // +/- 8.0
+        double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 0.1, RBFUtils.getCenters(-1.0d, +1.0d, 9));
 
         // Need distance delta
         double[] fdistlast10 = RBFUtils.processDataIntoFeatures(s.DistanceLast10, 80, RBFUtils.getCenters(0, 80, 6));
@@ -650,20 +651,32 @@ public class NNGun extends BaseGun {
         // SinceVelocityChange - Range 0 - 1, split into 7 features
         double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.05, RBFUtils.getCenters(0, 1, 7));
 
+        /*
         // Wall Tries Forward - Range 0.0 - 20.0, split into 7 features
         double[] ffwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesForward * 20, 20.0, RBFUtils.getCenters(0, 20, 7));
 
         // Wall Tries Backward - Range 0.0 - 20.0, split into 4 features
         double[] fbwalltries = RBFUtils.processDataIntoFeatures(s.WallTriesBack * 20, 20.0, RBFUtils.getCenters(0, 20, 4));
+        */
 
         // SinceDirectionChange - Range 0 - bft, split into 7 features
         double[] fsincedirch = RBFUtils.processDataIntoFeatures(Math.min(s.SinceDirectionChange, bft), 1, RBFUtils.getCenters(0, bft, 7));
 
+        double wrdf = Math.min(1.5, s.WallRadialDistanceForward);
+        double wrdb = Math.min(1.0, s.WallRadialDistanceBack);
+
+        // Forward radians to wall - Range 0.0 - 1.5, split into 7 features
+        double[] ffwrdf = RBFUtils.processDataIntoFeatures(wrdf, 0.05, RBFUtils.getCenters(0, 1.5, 7));
+
+        // Back radians to wall - Range 0.0 - 1.0, split into 4 features
+        double[] ffwrdb = RBFUtils.processDataIntoFeatures(wrdb, 0.05, RBFUtils.getCenters(0, 1.0, 4));
+
+        //System.out.println("wallfd: " + Math.min(1.5, s.WallRadialDistanceForward) + ", wallbk" + Math.min(1.0, s.WallRadialDistanceBack));
 
         // Current guess factor - Range -1.0 - 1.0, split into 11 features
         //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 1.0, RBFUtils.getCenters(-1.0, 1.0, 11));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, ffwalltries, fbwalltries, fsincedirch);
+        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, fsincedirch, ffwrdf, ffwrdb);
 
         // Situation s already contains normalized data
         /*

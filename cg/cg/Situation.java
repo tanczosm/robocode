@@ -33,6 +33,8 @@ public class Situation {
     public double SinceDirectionChange;
     public double WallTriesForward;
     public double WallTriesBack;
+    public double WallRadialDistanceForward;
+    public double WallRadialDistanceBack;
     public double Direction;
     public double BulletVelocity;
     public double MaxAngle;

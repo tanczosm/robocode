@@ -173,6 +173,8 @@ public class RadarScanner {
         double wallTries = getWallTries(enemyHeading, direction, x, y, distance);
         double wallTriesBack = getWallTries(enemyHeading, -direction, x, y, distance);
 
+        double wallRadialDistanceForward = CTUtils.wallDistance(x,y,distance,absBearing,1);
+        double wallRadialDistanceBack = CTUtils.wallDistance(x,y,distance,absBearing,-1);
 
 
         enemyLateralVelocity = Math.abs(enemyLateralVelocity);  // Two lateral velocities seem to be going on here..
@@ -210,6 +212,8 @@ public class RadarScanner {
         scan.AdvancingVelocity = advancingVelocity / 16d;
         scan.WallTriesForward = wallTries / 20d;
         scan.WallTriesBack = wallTriesBack / 20d;
+        scan.WallRadialDistanceForward = wallRadialDistanceForward;
+        scan.WallRadialDistanceBack = wallRadialDistanceBack;
         scan.NormalizedDistance = distance / 800d;
         scan.Distance = distance;
         scan.DistanceLast10 = Math.max(0, Math.min(80.0, LatVelLast10));
