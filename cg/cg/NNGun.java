@@ -1,6 +1,7 @@
 package cg;
 
 import org.encog.engine.network.activation.ActivationSigmoid;
+import org.encog.mathutil.error.ErrorCalculation;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLData;
@@ -478,6 +479,22 @@ public class NNGun extends BaseGun {
 
     }
 
+    /**
+     * Calculate the error for this neural network. The error is
+     calculated using root-mean-square(RMS).
+     * @param pair The training set data pair
+     * @return The error percentage.
+     */
+    public double calculateError(final BasicMLDataPair pair){
+        final ErrorCalculation errorCalculation=new ErrorCalculation();
+        final double[] actual=new double[OUTPUT_LENGTH];
+
+        basicNetwork.compute(pair.getInputArray(),actual);
+        errorCalculation.updateError(actual,pair.getIdealArray(),pair.getSignificance());
+
+        return errorCalculation.calculate();
+    }
+
     public void update() {
 
         drawWaves();
@@ -523,19 +540,14 @@ public class NNGun extends BaseGun {
                 //System.out.println("INP=" + Arrays.toString(currentWave.inputs));
                 //System.out.println(Arrays.toString(currentWave.outputs));
 
+                // First let's train the wave that just came in
                 _theData.clear();
                 _theData.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
-                for (int k = 0; k < _hitQueueInputs.size(); k++) {
-                    //data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
-                    assert _hitQueueInputs.get(k).length == INPUT_LENGTH : "INPUT LENGTH MISMATCH!";
-                    assert _hitQueueOutputs.get(k).length == OUTPUT_LENGTH : "OUTPUT LENGTH MISMATCH!";
+                if (_theData.size() > 0)
+                    basicTrain.iteration(1);
 
-                    //input[k+1] = _hitQueueInputs.get(k);
-                    //output[k+1] = _hitQueueOutputs.get(k);
-                    _theData.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
-
-                }
+                // Let's train the random network
 
                 _randomDataBuffer.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
@@ -562,6 +574,10 @@ public class NNGun extends BaseGun {
                     }
                 }
 
+                if (_randomData.size() > 0)
+                    randomTrain.iteration(1);
+
+                // Done training the random network
 
                 /*
                 if (currentWave.actualHit) {
@@ -570,17 +586,44 @@ public class NNGun extends BaseGun {
 
                 }*/
 
+                _theData.clear();
 
-                //MLDataSet mld = new BasicMLDataSet(input, output);
+                double errSum = 0, errAvg = 0;
+                int count = 0, errCount = 0;
 
-//System.out.println("Data set size is " + mld.size());
-                //basicTrain.pause();
-                //basicTrain.setTraining(mld);
-                if (_theData.size() > 0)
-                    basicTrain.iteration(1);
+                do {
 
-                if (_randomData.size() > 0)
-                    randomTrain.iteration(1);
+                    for (int k = 0; k < _hitQueueInputs.size(); k++) {
+                        //data.add(new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k))));
+                        assert _hitQueueInputs.get(k).length == INPUT_LENGTH : "INPUT LENGTH MISMATCH!";
+                        assert _hitQueueOutputs.get(k).length == OUTPUT_LENGTH : "OUTPUT LENGTH MISMATCH!";
+
+                        BasicMLDataPair pair = new BasicMLDataPair(new BasicMLData(_hitQueueInputs.get(k)), new BasicMLData(_hitQueueOutputs.get(k)));
+
+                        double err = calculateError(pair);
+                        System.out.println("Err: " + err);
+
+                        if (err > 0.05) {
+                            errSum += err;
+                            errCount++;
+                            _theData.add(pair);
+                        }
+
+                    }
+
+
+                    if (_theData.size() > 0)
+                        basicTrain.iteration(1);
+
+                    errAvg = errSum / errCount;
+                    count++;
+                }
+                while (count < 4 && errAvg > 0.05);
+                //System.out.println(count == 8 ? 8 : "");
+
+
+
+
 
                 //System.out.println("Basic Error: " + Format.formatPercent(basicTrain.getError()));
                 //System.out.println("Random Error: " + Format.formatPercent(randomTrain.getError()));
