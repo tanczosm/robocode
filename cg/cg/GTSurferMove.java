@@ -211,9 +211,14 @@ public class GTSurferMove extends BaseMove {
             double offset = Math.PI/2 - 1 + distance/400;
 
             moveAngle =
+                    CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
+                                        predictedPosition,  CTUtils.absoluteBearing(surfWave.fireLocation,
+                                    predictedPosition) + (direction * (offset)), direction, WALL_STICK)
+                                    - predictedHeading;
+            /*
                     GTSurferMove.wallSmoothing(predictedPosition, CTUtils.absoluteBearing(surfWave.fireLocation,
                             predictedPosition) + (direction * (offset)), direction)
-                            - predictedHeading;
+                            - predictedHeading;*/
             moveDir = 1;
 
             if(Math.cos(moveAngle) < 0) {

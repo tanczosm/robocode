@@ -1,8 +1,6 @@
 package cg;
 
-import robocode.AdvancedRobot;
-import robocode.BattleEndedEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -12,6 +10,7 @@ public class V extends AdvancedRobot {
     private boolean turnRadar = true;
     public static RadarScanner _radarScanner = new RadarScanner();
     public static Targeting _targeting = null;
+    public static Movement _movement = null;
     public ArrayList<EnemyWave> _enemyWaves;
 
 
@@ -31,6 +30,9 @@ public class V extends AdvancedRobot {
             _targeting = new Targeting(this, _radarScanner);
         }
 
+        if (_movement == null)
+            _movement = new Movement(this, _radarScanner);
+
         setAdjustGunForRobotTurn(true);
         setAdjustRadarForGunTurn(true);
 
@@ -46,6 +48,11 @@ public class V extends AdvancedRobot {
         } while (true);
     }
 
+    public void onHitByBullet(HitByBulletEvent e) { if (_movement != null) _movement.onHitByBullet(e);}
+    public void onBulletHitBullet(BulletHitBulletEvent e) { if (_movement != null) _movement.onBulletHitBullet(e);}
+    public void onBulletHit(BulletHitEvent e) { if (_movement != null) _movement.onBulletHit(e);}
+    public void onBulletMissed(BulletMissedEvent e) { if (_movement != null) _movement.onBulletMissed(e);}
+
     @Override
     public void onBattleEnded(BattleEndedEvent event) {
         System.out.println("Battle ended..");
@@ -54,6 +61,7 @@ public class V extends AdvancedRobot {
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
+
 
         if (_radarScanner._lastScan == null) {
             _radarScanner._lastScan = e;
@@ -99,6 +107,8 @@ public class V extends AdvancedRobot {
         _radarScanner.nme.location = CTUtils.project(_radarScanner._myLocation, (Double) _radarScanner._surfAbsBearings.get(0) - Math.PI, e.getDistance());
 
         updateWaves();
+
+        _movement.update(e);
 
         _targeting.selectFiringPower(_radarScanner.nme.distance);
         _targeting.process(s);

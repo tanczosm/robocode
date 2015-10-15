@@ -20,7 +20,9 @@ public class Movement {
         this._radarScanner = radarScanner;
         this.movers = new ArrayList<BaseMove>();
 
-        // this.movers.add(new ...);
+        this.movers.add(new GTSurferMove(robot, radarScanner));
+
+        selectedMover = this.movers.get(0);
     }
 
     public void selectMover (String name)
@@ -42,6 +44,11 @@ public class Movement {
         }
 
         selectedMover = movers.get(index);
+    }
+
+    public void update(ScannedRobotEvent e)
+    {
+        selectedMover.update(e);
     }
 
     /* Call mover events */
