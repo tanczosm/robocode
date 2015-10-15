@@ -193,7 +193,7 @@ public class Targeting {
         double enemyBulletPower = _radarScanner.nme.lastBulletPower;
 
 
-        RadarScanner.FIRE_POWER = 3; //1.72d; //1.72d; //2.4d; //1.95;
+        RadarScanner.FIRE_POWER = 1.72d; //1.72d; //2.4d; //1.95;
         RadarScanner.FIRE_SPEED = 20 - RadarScanner.FIRE_POWER * 3;
     }
 }
