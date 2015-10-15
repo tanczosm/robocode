@@ -8,6 +8,7 @@ import java.util.ArrayList;
 public class V extends AdvancedRobot {
 
     private boolean turnRadar = true;
+    public static StatsTracker playerStats = new StatsTracker();
     public static RadarScanner _radarScanner = new RadarScanner();
     public static Targeting _targeting = null;
     public static Movement _movement = null;
@@ -27,7 +28,7 @@ public class V extends AdvancedRobot {
         Enemy.waves = _enemyWaves;
 
         if (_targeting == null) {
-            _targeting = new Targeting(this, _radarScanner);
+            _targeting = new Targeting(this, _radarScanner, playerStats);
         }
 
         if (_movement == null)
@@ -48,10 +49,44 @@ public class V extends AdvancedRobot {
         } while (true);
     }
 
-    public void onHitByBullet(HitByBulletEvent e) { if (_movement != null) _movement.onHitByBullet(e);}
-    public void onBulletHitBullet(BulletHitBulletEvent e) { if (_movement != null) _movement.onBulletHitBullet(e);}
-    public void onBulletHit(BulletHitEvent e) { if (_movement != null) _movement.onBulletHit(e);}
-    public void onBulletMissed(BulletMissedEvent e) { if (_movement != null) _movement.onBulletMissed(e);}
+    public void onHitByBullet(HitByBulletEvent e) {
+
+        _radarScanner.nme.enemyShotHits++;
+
+        if (_movement != null) _movement.onHitByBullet(e);
+    }
+
+    public void onBulletHitBullet(BulletHitBulletEvent e) {
+
+        Bullet b = e.getBullet();
+        _radarScanner.registerBulletHit(b.getX(), b.getY());
+
+        if (_movement != null) _movement.onBulletHitBullet(e);
+    }
+
+    public void onBulletHit(BulletHitEvent e) {
+        if (_movement != null) _movement.onBulletHit(e);
+
+        Situation best = _radarScanner.registerBulletHit(e.getBullet().getX(), e.getBullet().getY());
+
+        if (best != null)
+            playerStats.add(true, (int) best.Distance);
+        else
+            playerStats.add(true, (int) _radarScanner.nme.distance);
+
+    }
+
+    public void onBulletMissed(BulletMissedEvent e) {
+
+        Situation best = _radarScanner.getInterceptingSituation(e.getBullet().getX(), e.getBullet().getY());
+
+        if (best != null)
+            playerStats.add(false, (int) best.Distance);
+        else
+            playerStats.add(false, (int) _radarScanner.nme.distance);
+
+        if (_movement != null) _movement.onBulletMissed(e);
+    }
 
     @Override
     public void onBattleEnded(BattleEndedEvent event) {

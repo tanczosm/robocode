@@ -15,6 +15,7 @@ public class Targeting {
 
     private AdvancedRobot _robot;
     private RadarScanner _radarScanner;
+    private StatsTracker _playerStats;
 
     public ArrayList<BaseGun> guns;
     public BaseGun _currentGun;
@@ -32,9 +33,10 @@ public class Targeting {
     public int totalSwitches = 0;
 
 
-    public Targeting(AdvancedRobot robot, RadarScanner radarScanner) {
+    public Targeting(AdvancedRobot robot, RadarScanner radarScanner, StatsTracker playerStats) {
         this._robot = robot;
         this._radarScanner = radarScanner;
+        this._playerStats = playerStats;
 
         _coolingRate = _robot.getGunCoolingRate();
 
@@ -188,12 +190,51 @@ public class Targeting {
 
     public void selectFiringPower(double distance) {
 
+
         double playerEnergy = _robot.getEnergy();
 
         double enemyBulletPower = _radarScanner.nme.lastBulletPower;
+        double _shotsTotal = _playerStats.getSegmentedStat((int) distance).getTotal();
+        double _shotAccuracy = _playerStats.getSegmentedStat((int) distance).getHitRatio() * 100;
+        double _enemyShotsTotal = _radarScanner.nme.enemyShotHits + _radarScanner.nme.enemyShotMisses;
+        double _enemyShotAccuracy = (_enemyShotsTotal == 0 ? 0 : ((_radarScanner.nme.enemyShotHits / (_enemyShotsTotal)) * 100));
 
 
         RadarScanner.FIRE_POWER = 1.72d; //1.72d; //2.4d; //1.95;
+
+        if (_radarScanner.nme.distance < 70d)
+            RadarScanner.FIRE_POWER = 3;
+        if (_radarScanner.nme.distance < 100d || _shotAccuracy > 32d)
+            RadarScanner.FIRE_POWER = 2.95d;
+        else {
+            //power = scale based on my energy and enemy energy expected at the time this bullet hits if they continue to shoot every time gunheat is 0
+            int ticks = (int) (_radarScanner.nme.distance / (20 - RadarScanner.FIRE_POWER * 3));  // How many ticks will it take to traverse this distance
+            int expectedTicksPerShot = (int) ((1 + (RadarScanner.FIRE_POWER / 5)) / 0.1d);
+            double playerExpectedEnergy = (playerEnergy - RadarScanner.FIRE_POWER);
+            int enemyExpectedTicksPerShot = (int) ((1 + (enemyBulletPower / 5)) / 0.1d);  // Enemy gunheat / 0.1 .. Gives how many ticks per shot
+            double enemyExpectedEnergy = _radarScanner.nme.energy - (ticks / enemyExpectedTicksPerShot) * enemyBulletPower;  // Assume they stick with same bullet power
+
+            if (enemyBulletPower < RadarScanner.FIRE_POWER && (_enemyShotAccuracy > _shotAccuracy)/* && nme.energy < playerEnergy*0.66*/)
+                RadarScanner.FIRE_POWER = Math.max(0.1, enemyBulletPower - 0.1);
+        }
+
+        //RadarScanner.FIRE_POWER = 1.1d;
+
+        if (RadarScanner.FIRE_POWER > playerEnergy || playerEnergy < 15) {
+            RadarScanner.FIRE_POWER = 0.1d;
+        }
+
+        /*
+        if (_robot.getRoundNum() < 3)
+            RadarScanner.FIRE_POWER = 0.1d; // Use dodging capability to collect firing data.. we should live longer and get smarter
+        */
+
+        /*
+        if (CrushTurtle.gunTestMode)
+            RadarScanner.FIRE_POWER = 3;
+        */
+
         RadarScanner.FIRE_SPEED = 20 - RadarScanner.FIRE_POWER * 3;
+
     }
 }
