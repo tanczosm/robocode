@@ -1,6 +1,7 @@
 package cg;
 
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 
 class EnemyWave {
     Point2D.Double fireLocation;
@@ -9,6 +10,7 @@ class EnemyWave {
     double bulletVelocity, directAngle, distanceTraveled, bulletPower, playerDistance, maxEscapeAngle;
     int direction, weight;
 
+    ArrayList safePoints;
     double[] waveGuessFactors;
 
     public EnemyWave() {
