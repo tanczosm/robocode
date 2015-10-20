@@ -15,6 +15,7 @@ import robocode.util.Utils;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Created by tanczosm on 10/14/2015.
@@ -271,6 +272,7 @@ public class GTSurferMove extends BaseMove {
             BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
             _surfStats = basicNetwork.compute(inp).getData();
         }
+        System.out.println("Guessfactor Output: " + Arrays.toString(_surfStats));
 
         return surfWave;
     }
