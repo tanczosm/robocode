@@ -24,9 +24,25 @@ public class GTSurferMove extends BaseMove {
     public double direction = 1;
 
     public ArrayList _enemyWaves;
-    public ArrayList _surfDirections;
-    public ArrayList _surfAbsBearings;
+    public ArrayList _surfData;
+    public ArrayList<Double> _LateralVelocityLast10;
 
+    double _lastVelocity = 0;
+    int _lastDirection = 1;
+    int _lastDirectionTimeChange = 0;
+
+    private class surfData
+    {
+        public Point2D.Double enemyLocation;
+        public Point2D.Double playerLocation;
+
+        public int direction;
+        public double lateralVelocity;
+        public double lateralDistanceLast10;
+        public double absBearing;
+        public double acceleration;
+        public int timeSinceDirectionChange;
+    }
 
     public GTSurferMove (AdvancedRobot robot, RadarScanner radarScanner)
     {
@@ -34,8 +50,8 @@ public class GTSurferMove extends BaseMove {
         _radarScanner = radarScanner;
 
         _enemyWaves = new ArrayList();
-        _surfDirections = new ArrayList();
-        _surfAbsBearings = new ArrayList();
+        _surfData = new ArrayList();
+        _LateralVelocityLast10 = new ArrayList<Double>();
     }
 
     public String getName ()
@@ -66,34 +82,74 @@ public class GTSurferMove extends BaseMove {
             = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
     public static double WALL_STICK = 160;
 
-
-
-    public void update(ScannedRobotEvent e) {
+    public void scan(ScannedRobotEvent e) {
         _myLocation = new Point2D.Double(_robot.getX(), _robot.getY());
 
         double lateralVelocity = _robot.getVelocity()*Math.sin(e.getBearingRadians());
         double absBearing = e.getBearingRadians() + _robot.getHeadingRadians();
+        double velocity = _robot.getVelocity();
+        int direction = new Integer((lateralVelocity >= 0) ? 1 : -1);
+        int timeSinceDirectionChange = 0;
 
         _robot.setTurnRadarRightRadians(Utils.normalRelativeAngle(absBearing - _robot.getRadarHeadingRadians()) * 2);
 
-        _surfDirections.add(0,
-                new Integer((lateralVelocity >= 0) ? 1 : -1));
-        _surfAbsBearings.add(0, new Double(absBearing + Math.PI));
+        double acceleration = 0;
+        if (_lastVelocity != Double.MAX_VALUE) {
 
+            if (CTUtils.sign(_lastVelocity) == CTUtils.sign(velocity)) {
+                acceleration = Math.abs(velocity) - Math.abs(_lastVelocity);
+            } else {
+                acceleration = Math.abs(velocity - _lastVelocity);
+            }
+        } else {
+            acceleration = velocity;
+        }
+        acceleration = Math.abs(Math.max(Math.min(acceleration, 2d), -2d));
+
+        _LateralVelocityLast10.add(Math.abs(lateralVelocity));
+        if (_LateralVelocityLast10.size() > 10)
+            _LateralVelocityLast10.remove(0);
+
+        double LatVelLast10 = 0;
+        for (int k = 0; k < _LateralVelocityLast10.size(); k++) {
+            LatVelLast10 += _LateralVelocityLast10.get(k);
+        }
+
+        if (direction != _lastDirection)
+        {
+            _lastDirectionTimeChange = (int)_robot.getTime();
+        }
+
+        surfData sd = new surfData();
+        sd.enemyLocation = (Point2D.Double)_enemyLocation.clone();
+        sd.playerLocation = new Point2D.Double(_robot.getX(), _robot.getY());
+        sd.lateralVelocity = lateralVelocity;
+        sd.direction =  direction;
+        sd.absBearing = new Double(absBearing + Math.PI);
+        sd.acceleration = acceleration;
+        sd.lateralDistanceLast10 = LatVelLast10;
+        sd.timeSinceDirectionChange = (int)_robot.getTime() - _lastDirectionTimeChange;
+        _surfData.add(sd);
+
+
+// Need location, lateral velocity, heading, lateral direction, advancing velocity and angle from enemy
 
         double bulletPower = _radarScanner._oppEnergy - e.getEnergy();
         if (bulletPower < 3.01 && bulletPower > 0.09
-                && _surfDirections.size() > 2) {
+                && _surfData.size() > 2) {
             EnemyWave ew = new EnemyWave();
             ew.fireTime = _robot.getTime() - 1;
             ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
             ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
-            ew.direction = ((Integer)_surfDirections.get(2)).intValue();
-            ew.directAngle = ((Double)_surfAbsBearings.get(2)).doubleValue();
+            ew.direction = ((Integer)_surfData.get(2)).intValue();
+            ew.directAngle = ((Double)_surfData.get(2)).doubleValue();
             ew.fireLocation = (Point2D.Double)_enemyLocation.clone(); // last tick
 
             _enemyWaves.add(ew);
         }
+
+        _lastVelocity = velocity;
+        _lastDirection = direction;
 
         _radarScanner._oppEnergy = e.getEnergy();
 
@@ -101,10 +157,13 @@ public class GTSurferMove extends BaseMove {
         // enemy location as the source of the wave
         _enemyLocation = CTUtils.project(_myLocation, absBearing, e.getDistance());
 
+    }
+
+    public void update(ScannedRobotEvent e) {
+
         updateWaves();
         doSurfing();
 
-        // gun code would go here...
     }
 
     public void updateWaves() {

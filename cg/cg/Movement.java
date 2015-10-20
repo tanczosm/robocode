@@ -23,7 +23,7 @@ public class Movement {
         this.movers.add(new GTSurferMove(robot, radarScanner));
         this.movers.add(new CTSurferMove(robot, radarScanner));
 
-        selectedMover = this.movers.get(1);
+        selectedMover = this.movers.get(0);
     }
 
     public void selectMover (String name)
@@ -47,6 +47,13 @@ public class Movement {
         selectedMover = movers.get(index);
     }
 
+    // Used for processing radar event data collection
+    public void scan(ScannedRobotEvent e)
+    {
+        selectedMover.scan(e);
+    }
+
+    // Used for updating movement
     public void update(ScannedRobotEvent e)
     {
         selectedMover.update(e);

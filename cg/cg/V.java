@@ -103,36 +103,10 @@ public class V extends AdvancedRobot {
             return;
         }
 
-        double enemyHeading = getHeadingRadians() + _radarScanner.nme.bearingRadians;
+        //double enemyHeading = getHeadingRadians() + _radarScanner.nme.bearingRadians;
         Situation s = _radarScanner.processScanEvent(e, true);
 
-        try {
-            double bulletPower = _radarScanner._oppEnergy - e.getEnergy();
-            if (bulletPower < 3.01 && (bulletPower > 0.09 || (bulletPower > 0 && (s.WallTriesForward > 5 && s.WallTriesBack > 5))) && _radarScanner._surfDirections.size() > 2) {
-                EnemyWave ew = new EnemyWave();
-                ew.fireTime = getTime() - 1;
-                ew.bulletPower = bulletPower;
-                ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
-                ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
-                ew.direction = ((Integer) _radarScanner._surfDirections.get(2)).intValue();
-                ew.directAngle = ((Double) _radarScanner._surfAbsBearings.get(2)).doubleValue();
-                ew.fireLocation = (Point2D.Double) (_radarScanner.nme.lastlocation == null ? _radarScanner.nme.location.clone() : _radarScanner.nme.lastlocation.clone()); //_radarScanner.nme.location.clone(); // last tick
-                ew.playerDistance = _radarScanner.nme.location.distance(_radarScanner._myLocation);
-                ew.maxEscapeAngle = CTUtils.maxEscapeAngle(ew.bulletVelocity);
-                ew.waveGuessFactors = _surfStats[(int) Math.min((_radarScanner._lastScan.getDistance() + 50) / 200, 3)][(int) (CTUtils.clamp((Math.abs(_radarScanner._lastLatVel) + 1) / 2, 0, 4))];
-                _enemyWaves.add(ew);
-//(int)((s.WallTriesBack+s.WallTriesForward)) (0..2)
-                _radarScanner.nme.lastBulletPower = bulletPower;
-            }
-
-
-            if (bulletPower >= 0 && bulletPower < 3.01)
-                _radarScanner.nme.lastShotTime = getTime();
-
-        } catch (ArrayIndexOutOfBoundsException em) {
-            //System.out.println(em.getMessage());
-            System.out.println();
-        }
+        _movement.scan(e);
 
 
         _radarScanner._oppEnergy = _radarScanner._lastScan.getEnergy();
@@ -141,7 +115,6 @@ public class V extends AdvancedRobot {
         // enemy location as the source of the wave
         _radarScanner.nme.location = CTUtils.project(_radarScanner._myLocation, (Double) _radarScanner._surfAbsBearings.get(0) - Math.PI, e.getDistance());
 
-        updateWaves();
 
         _movement.update(e);
 

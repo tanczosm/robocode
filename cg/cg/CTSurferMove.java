@@ -84,7 +84,7 @@ public class CTSurferMove extends BaseMove {
         _robot = robot;
         _radarScanner = radarScanner;
 
-        //_enemyWaves = Enemy.waves;
+        _enemyWaves = new ArrayList<EnemyWave>();
     }
 
     public String getName()
@@ -92,10 +92,56 @@ public class CTSurferMove extends BaseMove {
         return "CTSurfer";
     }
 
+    public void scan(ScannedRobotEvent e) {
+
+        double wallDistanceX = Math.min(_robot.getX() - 18, _radarScanner._fieldRect.getWidth() - _robot.getX() - 18);
+        double wallDistanceY = Math.min(_robot.getY() - 18, _radarScanner._fieldRect.getHeight() - _robot.getY() - 18);
+        double cornerDistance = CTUtils.cornerDistance(new Point2D.Double(_robot.getX(),_robot.getY()), _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight());
+
+        int wd = 0;
+        if (cornerDistance < 100)
+            wd = 1;
+        else if (Math.min(wallDistanceX, wallDistanceY) < 60)
+            wd = 2;
+
+        //System.out.println("cd: " + cornerDistance + ", wdx: " + wallDistanceX + ", wdy: " + wallDistanceY);
+
+        System.out.println("wd: " + wd);
+
+        try {
+            double bulletPower = _radarScanner._oppEnergy - e.getEnergy();
+            if (bulletPower < 3.01 && (bulletPower > 0.09) && _radarScanner._surfDirections.size() > 2) {
+                EnemyWave ew = new EnemyWave();
+                ew.fireTime = _robot.getTime() - 1;
+                ew.bulletPower = bulletPower;
+                ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
+                ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
+                ew.direction = ((Integer) _radarScanner._surfDirections.get(2)).intValue();
+                ew.directAngle = ((Double) _radarScanner._surfAbsBearings.get(2)).doubleValue();
+                ew.fireLocation = (Point2D.Double) (_radarScanner.nme.lastlocation == null ? _radarScanner.nme.location.clone() : _radarScanner.nme.lastlocation.clone()); //_radarScanner.nme.location.clone(); // last tick
+                ew.playerDistance = _radarScanner.nme.location.distance(_radarScanner._myLocation);
+                ew.maxEscapeAngle = CTUtils.maxEscapeAngle(ew.bulletVelocity);
+                ew.waveGuessFactors = _surfStats[(int) Math.min((_radarScanner._lastScan.getDistance() + 50) / 200, 3)][(int) (CTUtils.clamp((Math.abs(_radarScanner._lastLatVel) + 1) / 2, 0, 4))];
+                _enemyWaves.add(ew);
+                //double wf = CTUtils.wallDistance(ew.fireLocation.x, ew.fireLocation.y, ew.playerDistance, -ew.directAngle ,1);
+
+//(int)((s.WallTriesBack+s.WallTriesForward)) (0..2)
+                _radarScanner.nme.lastBulletPower = bulletPower;
+            }
+
+
+            if (bulletPower >= 0 && bulletPower < 3.01)
+                _radarScanner.nme.lastShotTime = _robot.getTime();
+
+        } catch (ArrayIndexOutOfBoundsException em) {
+            //System.out.println(em.getMessage());
+            System.out.println();
+        }
+    }
+
     public void update(ScannedRobotEvent e) {
 
-        _enemyWaves = Enemy.waves;
-
+        updateWaves();
         doSurfing();
     }
 
@@ -460,7 +506,7 @@ public class CTSurferMove extends BaseMove {
             g.setColor(new Color(shade, 255-shade, 0));
             g.drawOval((int) (predictedPosition.getX() - 1), (int) (predictedPosition.getY() - 1), 2, 2);
 
-            System.out.println((direction < 0 ? "L " : "R ") + "P.dist: " + predictedDistance + ", Ticks until intercept: " + next[i].tickDistance + ", Danger: " + next[i].danger);
+            //System.out.println((direction < 0 ? "L " : "R ") + "P.dist: " + predictedDistance + ", Ticks until intercept: " + next[i].tickDistance + ", Danger: " + next[i].danger);
 
             // future danger at any given predicted position is Math.min(dangerLeft, dangerRight)
 
@@ -955,11 +1001,13 @@ public class CTSurferMove extends BaseMove {
 		}
         else
 		*/
-        java.text.DecimalFormat df = new java.text.DecimalFormat("#.##");
-        System.out.println("Danger [L: " + df.format(dangerLeft) + //*100000000000000d
-                            /*" M: " + df.format(dangerMiddle*100000000000000d) +*/
-                        " R: " + df.format(dangerRight) + "] Corner Distance: [" + cornerDist + "]"
-        );
+
+
+        //java.text.DecimalFormat df = new java.text.DecimalFormat("#.##");
+        //System.out.println("Danger [L: " + df.format(dangerLeft) + //*100000000000000d
+        //                    /*" M: " + df.format(dangerMiddle*100000000000000d) +*/
+        //                " R: " + df.format(dangerRight) + "] Corner Distance: [" + cornerDist + "]"
+        //);
 
 
         if (dangerMiddle < dangerLeft && dangerMiddle < dangerRight)

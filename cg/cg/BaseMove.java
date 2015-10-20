@@ -11,6 +11,7 @@ import java.util.ArrayList;
  */
 public abstract class BaseMove {
 
+    abstract void scan(ScannedRobotEvent e);
     abstract void update(ScannedRobotEvent e);
     abstract void onHitByBullet(HitByBulletEvent e);
     abstract void onBulletHitBullet(BulletHitBulletEvent e);

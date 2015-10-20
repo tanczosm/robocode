@@ -214,16 +214,16 @@ public class Targeting {
             int enemyExpectedTicksPerShot = (int) ((1 + (enemyBulletPower / 5)) / 0.1d);  // Enemy gunheat / 0.1 .. Gives how many ticks per shot
             double enemyExpectedEnergy = _radarScanner.nme.energy - (ticks / enemyExpectedTicksPerShot) * enemyBulletPower;  // Assume they stick with same bullet power
 
-            if (enemyBulletPower < RadarScanner.FIRE_POWER && (_enemyShotAccuracy > _shotAccuracy)/* && nme.energy < playerEnergy*0.66*/)
+            if (enemyBulletPower < RadarScanner.FIRE_POWER && (_enemyShotAccuracy > _shotAccuracy))
                 RadarScanner.FIRE_POWER = Math.max(0.1, enemyBulletPower - 0.1);
         }
+
 
         //RadarScanner.FIRE_POWER = 1.1d;
 
         if (RadarScanner.FIRE_POWER > playerEnergy || playerEnergy < 15) {
             RadarScanner.FIRE_POWER = 0.1d;
         }
-
         /*
         if (_robot.getRoundNum() < 3)
             RadarScanner.FIRE_POWER = 0.1d; // Use dodging capability to collect firing data.. we should live longer and get smarter

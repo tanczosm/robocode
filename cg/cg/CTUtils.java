@@ -241,6 +241,18 @@ public class CTUtils {
         return ((double) Math.round(d * powerTen)) / powerTen;
     }
 
+    public static double cornerDistance (Point2D.Double location, double bfWidth,
+                                  double bfHeight)
+    {
+        double tr = location.distance(bfWidth, bfHeight);
+        double tl = location.distance(0, bfHeight);
+        double br = location.distance(bfWidth, 0);
+        double bl = location.distance(0, 0);
+
+        return Math.min(Math.min(tr,tl), Math.min(br,bl));
+    }
+
+
     /**
      * wallSmoothing: do some Voodoo and wall smooth in a very efficiently.
      * - ...in terms of CPU cycles, not amount of code.

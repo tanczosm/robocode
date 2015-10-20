@@ -620,7 +620,7 @@ public class NNGun extends BaseGun {
                 }
                 while (count < 2 && _errAvg > 0.05);
 
-                System.out.println("Average Error: " + _errAvg);
+                //System.out.println("Average Error: " + _errAvg);
 
 
 
