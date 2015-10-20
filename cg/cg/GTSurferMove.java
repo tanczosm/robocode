@@ -30,7 +30,7 @@ public class GTSurferMove extends BaseMove {
     public Backpropagation basicTrain;
     private ArrayList<MLDataPair> _theData;
 
-    public static final int INPUT_LENGTH = 37;
+    public static final int INPUT_LENGTH = 48;
     public static final int OUTPUT_LENGTH = 61;
 
     public static int BINS = OUTPUT_LENGTH;
@@ -221,6 +221,9 @@ public class GTSurferMove extends BaseMove {
         double bft = w.playerDistance / _radarScanner.FIRE_SPEED;
         double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(bft, 105), 105, RBFUtils.getCenters(0, 105, 11));
 
+        // Acceleration - Range 0 - 1.0, split into 11 features
+        double[] faccel = RBFUtils.processDataIntoFeatures(w.acceleration, 0.1, RBFUtils.getCenters(-2, 2, 11));
+
         // Lateral Velocity - Range -8 - 8, split into 8 features
         double[] flatvel = RBFUtils.processDataIntoFeatures(w.lateralVelocity, 2.0, RBFUtils.getCenters(-8, 8, 8));
 
@@ -236,7 +239,7 @@ public class GTSurferMove extends BaseMove {
         // Back radians to wall - Range 0.0 - 1.0, split into 4 features
         double[] ffwrdb = RBFUtils.processDataIntoFeatures(wrdb, 0.05, RBFUtils.getCenters(0, 1.0, 4));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, fsincedirch, ffwrdf, ffwrdb);
+        return RBFUtils.mergeFeatures(fdistance, faccel, flatvel, fsincedirch, ffwrdf, ffwrdb);
 
     }
 
@@ -314,7 +317,7 @@ public class GTSurferMove extends BaseMove {
         double gf = getGuessFactor(ew, targetLocation);
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, 0.2, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, 0.1, centers);
 
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
@@ -322,7 +325,7 @@ public class GTSurferMove extends BaseMove {
         if (_theData.size() > 5)
             _theData.remove(0);
 
-        basicTrain.iteration(1);
+        basicTrain.iteration(2);
 
     }
 
