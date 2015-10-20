@@ -1,5 +1,7 @@
 package cg;
 
+import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import robocode.*;
 import robocode.util.Utils;
 
@@ -14,6 +16,10 @@ public class GTSurferMove extends BaseMove {
 
     private AdvancedRobot _robot;
     private RadarScanner _radarScanner;
+
+    // Neural network stuff
+    public BasicNetwork basicNetwork;
+    public Backpropagation basicTrain;
 
     public static int BINS = 47;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
@@ -42,6 +48,8 @@ public class GTSurferMove extends BaseMove {
         public double absBearing;
         public double acceleration;
         public int timeSinceDirectionChange;
+        public double forwardWallDistance;
+        public double reverseWallDistance;
     }
 
     public GTSurferMove (AdvancedRobot robot, RadarScanner radarScanner)
@@ -52,6 +60,7 @@ public class GTSurferMove extends BaseMove {
         _enemyWaves = new ArrayList();
         _surfData = new ArrayList();
         _LateralVelocityLast10 = new ArrayList<Double>();
+        _enemyLocation = new Point2D.Double();
     }
 
     public String getName ()
@@ -129,22 +138,35 @@ public class GTSurferMove extends BaseMove {
         sd.acceleration = acceleration;
         sd.lateralDistanceLast10 = LatVelLast10;
         sd.timeSinceDirectionChange = (int)_robot.getTime() - _lastDirectionTimeChange;
+        sd.forwardWallDistance = CTUtils.wallDistance(sd.enemyLocation.x, sd.enemyLocation.y, e.getDistance(),  absBearing + Math.PI, direction );
+        sd.reverseWallDistance = CTUtils.wallDistance(sd.enemyLocation.x, sd.enemyLocation.y, e.getDistance(), absBearing + Math.PI, -direction );
         _surfData.add(0, sd);
 
+        //System.out.println("fd: " + sd.forwardWallDistance + ", rd: " + sd.reverseWallDistance);
 
 // Need location, lateral velocity, heading, lateral direction, advancing velocity and angle from enemy
 
         double bulletPower = _radarScanner._oppEnergy - e.getEnergy();
         if (bulletPower < 3.01 && bulletPower > 0.09
                 && _surfData.size() > 2) {
+
+            surfData _surf = ((surfData)_surfData.get(2));
+
             EnemyWave ew = new EnemyWave();
             ew.fireTime = _robot.getTime() - 1;
             ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
             ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
-            ew.direction = ((Integer)_surfData.get(2)).intValue();
-            ew.directAngle = ((Double)_surfData.get(2)).doubleValue();
+            ew.direction = _surf.direction;
+            ew.directAngle = _surf.absBearing;
             ew.fireLocation = (Point2D.Double)_enemyLocation.clone(); // last tick
 
+            ew.acceleration = _surf.acceleration;
+            ew.lateralDistanceLast10 = _surf.lateralDistanceLast10;
+            ew.timeSinceDirectionChange = _surf.timeSinceDirectionChange;
+            ew.forwardWallDistance = _surf.forwardWallDistance;
+            ew.reverseWallDistance = _surf.reverseWallDistance;
+            ew.lateralVelocity = _surf.lateralVelocity;
+System.out.println("enemy fired..");
             _enemyWaves.add(ew);
         }
 

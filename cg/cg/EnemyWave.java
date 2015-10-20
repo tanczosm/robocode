@@ -10,6 +10,14 @@ class EnemyWave {
     double bulletVelocity, directAngle, distanceTraveled, bulletPower, playerDistance, maxEscapeAngle;
     int direction, weight;
 
+    // Additional data
+    public double lateralVelocity;
+    public double lateralDistanceLast10;
+    public double acceleration;
+    public int timeSinceDirectionChange;
+    public double forwardWallDistance;
+    public double reverseWallDistance;
+
     ArrayList safePoints;
     double[] waveGuessFactors;
 
