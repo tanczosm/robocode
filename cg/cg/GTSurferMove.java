@@ -314,10 +314,13 @@ public class GTSurferMove extends BaseMove {
         double gf = getGuessFactor(ew, targetLocation);
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, 0.05, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, 0.2, centers);
 
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
+
+        if (_theData.size() > 5)
+            _theData.remove(0);
 
         basicTrain.iteration(1);
 
