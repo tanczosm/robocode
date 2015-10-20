@@ -1,6 +1,13 @@
 package cg;
 
+import org.encog.engine.network.activation.ActivationSigmoid;
+import org.encog.ml.data.MLDataPair;
+import org.encog.ml.data.MLDataSet;
+import org.encog.ml.data.basic.BasicMLData;
+import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.ml.data.basic.BasicMLDataSet;
 import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.layers.BasicLayer;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import robocode.*;
 import robocode.util.Utils;
@@ -20,8 +27,12 @@ public class GTSurferMove extends BaseMove {
     // Neural network stuff
     public BasicNetwork basicNetwork;
     public Backpropagation basicTrain;
+    private ArrayList<MLDataPair> _theData;
 
-    public static int BINS = 47;
+    public static final int INPUT_LENGTH = 37;
+    public static final int OUTPUT_LENGTH = 61;
+
+    public static int BINS = OUTPUT_LENGTH;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
     public Point2D.Double _myLocation;     // our bot's location
     public Point2D.Double _enemyLocation;  // enemy bot's location
@@ -61,6 +72,21 @@ public class GTSurferMove extends BaseMove {
         _surfData = new ArrayList();
         _LateralVelocityLast10 = new ArrayList<Double>();
         _enemyLocation = new Point2D.Double();
+
+        basicNetwork = new BasicNetwork();
+        basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+        basicNetwork.getStructure().finalizeStructure();
+        basicNetwork.reset();
+        basicNetwork.reset(1000);
+
+        _theData = new ArrayList<MLDataPair>();
+        _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
+        MLDataSet trainingSet = new BasicMLDataSet(_theData);
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        basicTrain.setBatchSize(1);
+
     }
 
     public String getName ()
@@ -166,7 +192,7 @@ public class GTSurferMove extends BaseMove {
             ew.forwardWallDistance = _surf.forwardWallDistance;
             ew.reverseWallDistance = _surf.reverseWallDistance;
             ew.lateralVelocity = _surf.lateralVelocity;
-System.out.println("enemy fired..");
+
             _enemyWaves.add(ew);
         }
 
@@ -185,6 +211,31 @@ System.out.println("enemy fired..");
 
         updateWaves();
         doSurfing();
+
+    }
+
+    public double[] getInputForWave(EnemyWave w) {
+
+        // Distance - Range 0 - 800, split into 11 features
+        double bft = w.playerDistance / _radarScanner.FIRE_SPEED;
+        double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(bft, 105), 105, RBFUtils.getCenters(0, 105, 11));
+
+        // Lateral Velocity - Range -8 - 8, split into 8 features
+        double[] flatvel = RBFUtils.processDataIntoFeatures(w.lateralVelocity, 2.0, RBFUtils.getCenters(-8, 8, 8));
+
+        // SinceDirectionChange - Range 0 - bft, split into 7 features
+        double[] fsincedirch = RBFUtils.processDataIntoFeatures(Math.min(w.timeSinceDirectionChange, bft), 1, RBFUtils.getCenters(0, bft, 7));
+
+        double wrdf = Math.min(1.5, w.forwardWallDistance);
+        double wrdb = Math.min(1.0, w.reverseWallDistance);
+
+        // Forward radians to wall - Range 0.0 - 1.5, split into 7 features
+        double[] ffwrdf = RBFUtils.processDataIntoFeatures(wrdf, 0.05, RBFUtils.getCenters(0, 1.5, 7));
+
+        // Back radians to wall - Range 0.0 - 1.0, split into 4 features
+        double[] ffwrdb = RBFUtils.processDataIntoFeatures(wrdb, 0.05, RBFUtils.getCenters(0, 1.0, 4));
+
+        return RBFUtils.mergeFeatures(fdistance, flatvel, fsincedirch, ffwrdf, ffwrdb);
 
     }
 
@@ -219,13 +270,20 @@ System.out.println("enemy fired..");
         return surfWave;
     }
 
-    // Given the EnemyWave that the bullet was on, and the point where we
-// were hit, calculate the index into our stat array for that factor.
-    public static int getFactorIndex(EnemyWave ew, Point2D.Double targetLocation) {
+    public static double getGuessFactor(EnemyWave ew, Point2D.Double targetLocation) {
         double offsetAngle = (CTUtils.absoluteBearing(ew.fireLocation, targetLocation)
                 - ew.directAngle);
         double factor = Utils.normalRelativeAngle(offsetAngle)
                 / CTUtils.maxEscapeAngle(ew.bulletVelocity) * ew.direction;
+
+        return factor;
+    }
+
+    // Given the EnemyWave that the bullet was on, and the point where we
+// were hit, calculate the index into our stat array for that factor.
+    public static int getFactorIndex(EnemyWave ew, Point2D.Double targetLocation) {
+
+        double factor = getGuessFactor(ew, targetLocation);
 
         return (int)CTUtils.limit(0,
                 (factor * ((BINS - 1) / 2)) + ((BINS - 1) / 2),
@@ -235,6 +293,8 @@ System.out.println("enemy fired..");
     // Given the EnemyWave that the bullet was on, and the point where we
 // were hit, update our stat array to reflect the danger in that area.
     public void logHit(EnemyWave ew, Point2D.Double targetLocation) {
+
+        /*
         int index = getFactorIndex(ew, targetLocation);
 
         for (int x = 0; x < BINS; x++) {
@@ -243,6 +303,17 @@ System.out.println("enemy fired..");
             // the next one, add 1 / 5; and so on...
             _surfStats[x] += 1.0 / (Math.pow(index - x, 2) + 1);
         }
+        */
+        double gf = getGuessFactor(ew, targetLocation);
+
+        double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, 0.05, centers);
+
+        _theData.clear();
+        _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
+
+        basicTrain.iteration(1);
+
     }
 
     public void onHitByBullet(HitByBulletEvent e) {
