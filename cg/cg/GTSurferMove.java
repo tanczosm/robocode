@@ -129,7 +129,7 @@ public class GTSurferMove extends BaseMove {
         sd.acceleration = acceleration;
         sd.lateralDistanceLast10 = LatVelLast10;
         sd.timeSinceDirectionChange = (int)_robot.getTime() - _lastDirectionTimeChange;
-        _surfData.add(sd);
+        _surfData.add(0, sd);
 
 
 // Need location, lateral velocity, heading, lateral direction, advancing velocity and angle from enemy
