@@ -267,6 +267,11 @@ public class GTSurferMove extends BaseMove {
             }
         }
 
+        if (surfWave != null) {
+            BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
+            _surfStats = basicNetwork.compute(inp).getData();
+        }
+
         return surfWave;
     }
 
