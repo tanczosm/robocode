@@ -7,31 +7,31 @@ import java.util.ArrayList;
 
 public class V extends AdvancedRobot {
 
-    private boolean turnRadar = true;
+    public enum Modes
+    {
+        UNRESTRICTED,
+        SURF_ONLY,
+        MOVEMENT_CHALLENGE, // Surf but use Raiko gun
+        TARGET_ONLY
+    }
+
     public static StatsTracker playerStats = new StatsTracker();
     public static RadarScanner _radarScanner = new RadarScanner();
     public static Targeting _targeting = null;
     public static Movement _movement = null;
-    public ArrayList<EnemyWave> _enemyWaves;
 
-
-    static final int GF_ZERO = 23; //23;
-    static final int GF_ONE = 46; // 46;
-    public static int BINS = GF_ONE + 1;
-    private static double _surfStats[][][] = new double[6][5][BINS];
+    public static Modes mode = Modes.MOVEMENT_CHALLENGE;
+    public static RaikoGun _raikoGun;
 
     public void run() {
-        _enemyWaves = new ArrayList<EnemyWave>();
         _radarScanner.setRobot(this);
-        _radarScanner.nme.waves = _enemyWaves;
+        _raikoGun = new RaikoGun(this);
 
-        Enemy.waves = _enemyWaves;
-
-        if (_targeting == null) {
+        if (_targeting == null && (mode != Modes.SURF_ONLY && mode != Modes.MOVEMENT_CHALLENGE)) {
             _targeting = new Targeting(this, _radarScanner, playerStats);
         }
 
-        if (_movement == null)
+        if (_movement == null && mode != Modes.TARGET_ONLY)
             _movement = new Movement(this, _radarScanner);
 
         setAdjustGunForRobotTurn(true);
@@ -41,8 +41,14 @@ public class V extends AdvancedRobot {
         turnRadarRightRadians(Double.POSITIVE_INFINITY);
 
         do {
-            _targeting.selectFiringPower(_radarScanner.nme.distance);
-            _targeting.process(null);
+            if (mode != mode.SURF_ONLY && mode != Modes.MOVEMENT_CHALLENGE) {
+                _targeting.selectFiringPower(_radarScanner.nme.distance);
+                _targeting.process(null);
+            }
+            if (mode == Modes.MOVEMENT_CHALLENGE)
+            {
+                _raikoGun.run();
+            }
 
             scan();
 
@@ -92,7 +98,8 @@ public class V extends AdvancedRobot {
     public void onBattleEnded(BattleEndedEvent event) {
         System.out.println("Battle ended..");
 
-        _targeting.onBattleEnded();
+        if (_targeting != null)
+            _targeting.onBattleEnded();
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
@@ -103,10 +110,16 @@ public class V extends AdvancedRobot {
             return;
         }
 
+        if (mode == Modes.MOVEMENT_CHALLENGE)
+        {
+            _raikoGun.onScannedRobot(e);
+        }
+
         //double enemyHeading = getHeadingRadians() + _radarScanner.nme.bearingRadians;
         Situation s = _radarScanner.processScanEvent(e, true);
 
-        _movement.scan(e);
+        if (_movement != null)
+            _movement.scan(e);
 
 
         _radarScanner._oppEnergy = _radarScanner._lastScan.getEnergy();
@@ -115,31 +128,16 @@ public class V extends AdvancedRobot {
         // enemy location as the source of the wave
         _radarScanner.nme.location = CTUtils.project(_radarScanner._myLocation, (Double) _radarScanner._surfAbsBearings.get(0) - Math.PI, e.getDistance());
 
+        if (_movement != null)
+            _movement.update(e);
 
-        _movement.update(e);
-
-        _targeting.selectFiringPower(_radarScanner.nme.distance);
-        _targeting.process(s);
+        if (_targeting != null) {
+            _targeting.selectFiringPower(_radarScanner.nme.distance);
+            _targeting.process(s);
+        }
 
         _radarScanner.postProcessScanEvent(e);
     }
 
-    public void updateWaves() {
-        for (int x = 0; x < _enemyWaves.size(); x++) {
-            EnemyWave ew = (EnemyWave) _enemyWaves.get(x);
-
-            ew.distanceTraveled = (getTime() - ew.fireTime) * ew.bulletVelocity;
-            if (ew.distanceTraveled >
-                    _radarScanner._myLocation.distance(ew.fireLocation) + 50) {
-                //logHit(ew, _radarScanner._myLocation, 0.5);
-
-                //int gfIndex = getFactorIndex(ew, _radarScanner._myLocation);
-
-                _enemyWaves.remove(x);
-                _radarScanner.nme.enemyShotMisses++;
-                x--;
-            }
-        }
-    }
 
 }

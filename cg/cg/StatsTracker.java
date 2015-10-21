@@ -31,7 +31,7 @@ package cg;
 		public void add (boolean hit, int distance)
 		{
 			
-			System.out.println(hit ? "HIT" : "MISS");
+			//System.out.println(hit ? "HIT" : "MISS");
 			overallStat.add(hit, distance);
 			for (GameStats gs : segmentedStats)
 			{

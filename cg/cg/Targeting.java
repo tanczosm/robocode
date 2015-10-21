@@ -118,14 +118,14 @@ public class Targeting {
         if (RadarScanner.FIRE_POWER > 0 && _robot.getGunHeat() / _coolingRate < 2d) {
 
             // Rotate gun according to bearing
-            if (bearing < Double.MAX_VALUE/* && distance > 70d*/) {
+            if (bearing < Double.MAX_VALUE && _robot.getGunHeat() <= 2*_coolingRate/* && distance > 70d*/) {
                 _robot.setTurnGunRightRadians(Utils.normalRelativeAngle(enemyHeading - gunHeading + bearing));
             }
 
             // Check to see if gun finished rotating and we can fire
             _aiming = true;
             if (bearing < Double.MAX_VALUE
-                    && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(16d / _radarScanner.nme.distance) || distance < 70d)
+                    && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(9d / _radarScanner.nme.distance) || distance < 70d)
                     ) {
                 //s.IsRealBullet = true;
 

@@ -30,7 +30,7 @@ public class GTSurferMove extends BaseMove {
     public Backpropagation basicTrain;
     private ArrayList<MLDataPair> _theData;
 
-    public static final int INPUT_LENGTH = 48;
+    public static final int INPUT_LENGTH = 44;
     public static final int OUTPUT_LENGTH = 61;
 
     public static int BINS = OUTPUT_LENGTH;
@@ -99,9 +99,6 @@ public class GTSurferMove extends BaseMove {
     public void onBulletHit(BulletHitEvent e) {
     }
 
-    public void onBulletHitBullet(BulletHitBulletEvent e)
-    {
-    }
 
     public void onBulletMissed(BulletMissedEvent e)
     {
@@ -221,8 +218,8 @@ public class GTSurferMove extends BaseMove {
         double bft = w.playerDistance / _radarScanner.FIRE_SPEED;
         double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(bft, 105), 105, RBFUtils.getCenters(0, 105, 11));
 
-        // Acceleration - Range 0 - 1.0, split into 11 features
-        double[] faccel = RBFUtils.processDataIntoFeatures(w.acceleration, 0.1, RBFUtils.getCenters(-2, 2, 11));
+        // Acceleration - Range 0 - 1.0, split into 7 features
+        double[] faccel = RBFUtils.processDataIntoFeatures(w.acceleration, 0.1, RBFUtils.getCenters(-2, 2, 7));
 
         // Lateral Velocity - Range -8 - 8, split into 8 features
         double[] flatvel = RBFUtils.processDataIntoFeatures(w.lateralVelocity, 2.0, RBFUtils.getCenters(-8, 8, 8));
@@ -275,7 +272,7 @@ public class GTSurferMove extends BaseMove {
             BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
             _surfStats = basicNetwork.compute(inp).getData();
         }
-        System.out.println("Guessfactor Output: " + Arrays.toString(_surfStats));
+        //System.out.println("Guessfactor Output: " + Arrays.toString(_surfStats));
 
         return surfWave;
     }
@@ -314,10 +311,14 @@ public class GTSurferMove extends BaseMove {
             _surfStats[x] += 1.0 / (Math.pow(index - x, 2) + 1);
         }
         */
+        double enemyX = ew.fireLocation.getX(), enemyY = ew.fireLocation.getY();
+        double startX = targetLocation.getX(), startY = targetLocation.getY();
+
         double gf = getGuessFactor(ew, targetLocation);
+        double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, 0.1, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*4, centers);
 
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
@@ -329,7 +330,36 @@ public class GTSurferMove extends BaseMove {
 
     }
 
+    public void onBulletHitBullet(BulletHitBulletEvent e)
+    {
+
+        if (!_enemyWaves.isEmpty()) {
+            Point2D.Double hitBulletLocation = new Point2D.Double(
+                    e.getBullet().getX(), e.getBullet().getY());
+            EnemyWave hitWave = null;
+
+            // look through the EnemyWaves, and find one that could've hit us.
+            for (int x = 0; x < _enemyWaves.size(); x++) {
+                EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+
+                if (Math.abs(ew.distanceToPoint(hitBulletLocation) - ew.distanceTraveled) < 50) {
+                    hitWave = ew;
+                    break;
+                }
+            }
+
+            if (hitWave != null) {
+                logHit(hitWave, hitBulletLocation);
+
+                // We can remove this wave now, of course.
+                _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
+            }
+        }
+
+    }
+
     public void onHitByBullet(HitByBulletEvent e) {
+
         // If the _enemyWaves collection is empty, we must have missed the
         // detection of this wave somehow.
         if (!_enemyWaves.isEmpty()) {
