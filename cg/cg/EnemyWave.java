@@ -2,13 +2,17 @@ package cg;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.Comparator;
 
-class EnemyWave {
+class EnemyWave implements Comparable<EnemyWave> {
     Point2D.Double fireLocation;
 
     long fireTime;
     double bulletVelocity, directAngle, distanceTraveled, bulletPower, playerDistance, maxEscapeAngle;
     int direction, weight;
+
+    // Temp data only for sorting - DO NOT USE
+    public double currentDistanceToPlayer;
 
     // Additional data
     public double lateralVelocity;
@@ -32,4 +36,13 @@ class EnemyWave {
         return Math.atan2(target.x - fireLocation.x, target.y - fireLocation.y);
     }
 
+    public int compareTo(EnemyWave other)
+    {
+        if (currentDistanceToPlayer < other.currentDistanceToPlayer)
+            return -1;
+        else if (currentDistanceToPlayer == other.currentDistanceToPlayer)
+            return 0;
+
+        return 1;
+    }
 }
