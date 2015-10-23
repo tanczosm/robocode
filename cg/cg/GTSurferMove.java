@@ -559,7 +559,7 @@ public class GTSurferMove extends BaseMove {
 
         double gfSpan = 2.0 / (double)OUTPUT_LENGTH;
         int totalSpan = (int)Math.max(Math.ceil(botWidthAimAngle / gfSpan), 1.0);
-        System.out.println("Span: " + totalSpan + " gfSpan: " + gfSpan + ", botWidthAimAngle: " + botWidthAimAngle);
+        //System.out.println("Span: " + totalSpan + " gfSpan: " + gfSpan + ", botWidthAimAngle: " + botWidthAimAngle);
 
         if(surfWave.safePoints == null){
             ArrayList forwardPoints = predictPositions(surfWave, 1);
@@ -655,8 +655,27 @@ public class GTSurferMove extends BaseMove {
             _robot.setTurnRightRadians(Math.tan(v2 - headingRadians));
 
         }
-        else
-            goTo(getBestPoint(surfWave));
+        else {
+            Point2D.Double p1 = getBestPoint(best.firstWave);
+            /*
+            if (best.secondWave != null) {
+                Point2D.Double temp = _myLocation;
+                _myLocation = p1;
+                Point2D.Double p2 = getBestPoint(best.secondWave);
+                _myLocation = temp;
+
+                if (p2.distance(_myLocation) > p1.distance(_myLocation) && p2.distance(p1) < p2.distance(_myLocation)) {
+                    goTo(p2);
+                    System.out.println("Advancing to p2");
+                }
+                else
+                    goTo(p1);
+            }
+            else
+                goTo(p1);
+            */
+            goTo(p1);
+        }
     }
 
     private void goTo(Point2D.Double destination) {
