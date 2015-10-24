@@ -404,7 +404,7 @@ public class GTSurferMove extends BaseMove {
         double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*4, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*5, centers);
 
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
@@ -575,6 +575,7 @@ public class GTSurferMove extends BaseMove {
             danger += surfWave.waveGuessFactors[i];
         }
         danger /= totalSpan;
+        //danger *= position.distance(surfWave.fireLocation) - surfWave.distanceTraveled;
 
         return danger;
     }
@@ -628,7 +629,7 @@ public class GTSurferMove extends BaseMove {
                 g.setColor(new Color(253, 242, 77));
                 g.drawOval((int)goToPoint.x,(int)goToPoint.y, 4, 4);
 
-                double thisDanger = checkDangerSpan(surfWave, (Point2D.Double)(reversePoints.get(i)), totalSpan);
+                double thisDanger = checkDangerSpan(surfWave, (Point2D.Double) (reversePoints.get(i)), totalSpan);
                 //double thisDanger = checkDanger(surfWave, (Point2D.Double) (reversePoints.get(i)));
 
                 if(thisDanger <= RminDanger){
@@ -725,7 +726,34 @@ public class GTSurferMove extends BaseMove {
 
             Point2D.Double pdest = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
             double distRemain = pdest.distance(_myLocation);
-            System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower));
+            int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
+            int tripTicks = best.firstWave.safePoints.size();
+
+            System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) + ", safepoint cnt: " + best.firstWave.safePoints.size());
+
+            if (tripTicks < bulletTicks)
+            {
+                // We are going to have some time to spare!!
+                double totalDist = 0;
+                Point2D.Double start = _myLocation;
+                for (int p = 0; p < best.firstWave.safePoints.size(); p++)
+                {
+                    Point2D.Double end = (Point2D.Double)best.firstWave.safePoints.get(p);
+                    totalDist += start.distance(end);
+
+                    start = end;
+                }
+
+                // So now we have to traverse totalDist pixels traveling up to 8 pixels a tick
+                int tickDiff = bulletTicks - tripTicks;
+                double extraPixels = (tickDiff) * 8.0; // This isn't right because of accel/decel
+
+                // We need to slow down..
+                double reducePerTick = extraPixels / tripTicks;
+                _robot.setMaxVelocity(8.0 - reducePerTick);
+            }
+            else
+                _robot.setMaxVelocity(8);
 
             if (distRemain < 5.0)
             {
