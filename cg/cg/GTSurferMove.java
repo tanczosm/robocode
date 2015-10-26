@@ -21,6 +21,11 @@ import java.util.Collections;
 
 /**
  * Created by tanczosm on 10/14/2015.
+ *
+ * IMPROVEMENT IDEAS:
+ * - Add distancing capabilities to try and maintain a distance of roughly 450 pixels whenever possible
+ * - Instead of always slowing down to reach the end point, try altering the path so it goes a different way
+ *
  */
 public class GTSurferMove extends BaseMove {
 
@@ -50,10 +55,7 @@ public class GTSurferMove extends BaseMove {
     public ArrayList _surfData;
     public ArrayList<Double> _LateralVelocityLast10;
 
-    // Used by the pathing predictor
-    Point2D.Double predictedPosition;
-    double predictedVelocity;
-    double predictedHeading;
+
 
     double _lastVelocity = 0;
     int _lastDirection = 1;
@@ -485,6 +487,86 @@ public class GTSurferMove extends BaseMove {
         }
     }
 
+
+    // Calculate the path a robot can take with smoothing..
+    public ArrayList<RobotState> calculateFutureMoves (ArrayList<EnemyWave> waves, double x, double y, double absBearingRadians, double velocity, double maxVelocity, double heading, double attackAngle, boolean clockwise, long currentTime, Rectangle2D.Double battleField,	double bfWidth, double bfHeight,
+                                               double wallStick, boolean ignoreWallHits)
+    {
+        int index = 0;
+        EnemyWave surfWave = waves.get(0);
+
+        ArrayList<RobotState> moves = new ArrayList<RobotState>();
+
+        MovSim mv = CTUtils.getMovSim();
+
+
+
+        double wallDanger = 0;
+        Rectangle2D.Double field = new Rectangle2D.Double(_radarScanner._fieldRect.x+20,_radarScanner._fieldRect.y+20,
+                _radarScanner._fieldRect.width-40,_radarScanner._fieldRect.height-40);
+
+        int counter = 0; // number of ticks in the future
+        boolean intercepted = false;
+
+        do {
+
+            RobotState next = CTUtils.nextPerpendicularWallSmoothedLocation(
+                    new Point2D.Double(x,y), absBearingRadians,velocity, maxVelocity, heading,
+                    attackAngle, clockwise, currentTime,
+                    battleField, bfWidth, bfHeight,
+                    wallStick, ignoreWallHits);
+
+
+            Point2D.Double predictedPosition = next.location;
+            double predictedDistance = surfWave.distanceToPoint(predictedPosition);
+            int ticks = CTUtils.bulletTicks(predictedDistance - surfWave.distanceTraveled ,surfWave.bulletPower) - 2;
+
+            //double dgs = calculateScaledDanger (surfWave, predictedPosition);
+
+
+            //if (!field.contains(next.location))
+            //    wallDanger = 0.1; // BEST IS = 0.1
+
+            //for (int z = 1; z < waves.size(); z++)
+            //    dgs += calculateScaledDanger (waves.get(z), predictedPosition); // * (1.0/(z));
+
+
+            /*
+            dgs += 5*(1/_radarScanner.nme.distance);
+            dgs += 5*(1- 1/Point2D.distance(predictedPosition.getX(),predictedPosition.getY(),_radarScanner._fieldRect.getCenterX(), _radarScanner._fieldRect.getCenterY()));
+            */
+            //dgs *= (1+surfWave.bulletPower);
+            //dgs += wallDanger;   // Need to somehow manage positioning better.. walls are death
+
+            next.danger = 0; //dgs;
+            next.tickDistance = ticks;
+            //next.direction = direction;
+
+            x = next.location.getX();
+            y = next.location.getY();
+            heading = next.heading;
+            velocity = next.velocity;
+            absBearingRadians = CTUtils.absoluteBearing(surfWave.fireLocation, next.location);
+
+            moves.add(next);
+
+            counter++;
+
+            if (next.location.distance(surfWave.fireLocation) - 20 <
+                    surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
+                //   + surfWave.bulletVelocity
+                    ) {
+                intercepted = true;
+            }
+        } while(!intercepted && counter < 500);
+
+        //we can't get the the last point, because we need to slow down
+        if(moves.size() > 1)
+            moves.remove(moves.size() - 1);
+
+        return moves;
+    }
+
     // CREDIT: mini sized predictor from Apollon, by rozu
 // http://robowiki.net?Apollon
     public ArrayList predictPositions(EnemyWave surfWave, int direction) {
@@ -500,14 +582,14 @@ public class GTSurferMove extends BaseMove {
         boolean intercepted = false;
 
         do {
-            double distance = predictedPosition.distance(surfWave.fireLocation);
+            double distance = surfWave.predictedPosition.distance(surfWave.fireLocation);
             double offset = Math.PI/2 - 1 + distance/400;
 
             moveAngle =
                     CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
-                                        predictedPosition,  CTUtils.absoluteBearing(surfWave.fireLocation,
-                                    predictedPosition) + (direction * (offset)), direction, WALL_STICK)
-                                    - predictedHeading;
+                                        surfWave.predictedPosition,  CTUtils.absoluteBearing(surfWave.fireLocation,
+                                    surfWave.predictedPosition) + (direction * (offset)), direction, WALL_STICK)
+                                    - surfWave.predictedHeading;
             /*
                     GTSurferMove.wallSmoothing(predictedPosition, CTUtils.absoluteBearing(surfWave.fireLocation,
                             predictedPosition) + (direction * (offset)), direction)
@@ -522,26 +604,26 @@ public class GTSurferMove extends BaseMove {
             moveAngle = Utils.normalRelativeAngle(moveAngle);
 
             // maxTurning is built in like this, you can't turn more then this in one tick
-            maxTurning = Math.PI/720d*(40d - 3d*Math.abs(predictedVelocity));
-            predictedHeading = Utils.normalRelativeAngle(predictedHeading
+            maxTurning = Math.PI/720d*(40d - 3d*Math.abs(surfWave.predictedVelocity));
+            surfWave.predictedHeading = Utils.normalRelativeAngle(surfWave.predictedHeading
                     + CTUtils.limit(-maxTurning, moveAngle, maxTurning));
 
             // this one is nice ;). if predictedVelocity and moveDir have
             // different signs you want to breack down
             // otherwise you want to accelerate (look at the factor "2")
-            predictedVelocity += (predictedVelocity * moveDir < 0 ? 2*moveDir : moveDir);
-            predictedVelocity = CTUtils.limit(-8, predictedVelocity, 8);
+            surfWave.predictedVelocity += (surfWave.predictedVelocity * moveDir < 0 ? 2*moveDir : moveDir);
+            surfWave.predictedVelocity = CTUtils.limit(-8, surfWave.predictedVelocity, 8);
 
             // calculate the new predicted position
-            predictedPosition = CTUtils.project(predictedPosition, predictedHeading, predictedVelocity);
+            surfWave.predictedPosition = CTUtils.project(surfWave.predictedPosition, surfWave.predictedHeading, surfWave.predictedVelocity);
 
             //add this point the our prediction
-            traveledPoints.add(predictedPosition);
+            traveledPoints.add(surfWave.predictedPosition);
 
             counter++;
 
-            if (predictedPosition.distance(surfWave.fireLocation) - 20 <
-                    surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
+            if (surfWave.predictedPosition.distance(surfWave.fireLocation) - 20 <
+                    surfWave.distanceTraveled + (counter * surfWave.bulletVelocity) //Hello from Eric
                 //   + surfWave.bulletVelocity
                     ) {
                 intercepted = true;
@@ -553,6 +635,41 @@ public class GTSurferMove extends BaseMove {
             traveledPoints.remove(traveledPoints.size() - 1);
 
         return traveledPoints;
+    }
+
+    public void analyzePath(BestWaves best)
+    {
+        Point2D.Double p1 = getBestPoint(best.firstWave, (Point2D.Double)_myLocation.clone(), _robot.getVelocity(), _robot.getHeadingRadians());
+
+        Graphics g = _robot.getGraphics();
+        g.setColor(Color.RED);
+        g.drawOval((int)p1.x, (int)p1.y, 4, 4);
+
+        Point2D.Double pdest = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
+        double distRemain = pdest.distance(_myLocation);
+        int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
+        int tripTicks = best.firstWave.safePoints.size();
+
+        System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) + ", safepoint cnt: " + best.firstWave.safePoints.size());
+
+        Point2D.Double endp1 = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
+
+        g.setColor(new Color(150, 0, 255));
+        g.drawOval((int)endp1.x, (int)endp1.y, 2, 2);
+
+        if (tripTicks < bulletTicks && bulletTicks < 100)
+        {
+            // We have extra ticks, what can we do with them?
+            int extraTicks = bulletTicks - tripTicks;
+
+            if (best.secondWave != null) {
+
+                Point2D.Double temp = (Point2D.Double) _myLocation.clone();
+                _myLocation = endp1;
+                Point2D.Double p2 = getBestPoint(best.secondWave, (Point2D.Double) best.firstWave.predictedPosition, best.firstWave.predictedVelocity, best.firstWave.predictedHeading);
+                _myLocation = temp;
+            }
+        }
     }
 
     public double checkDanger(EnemyWave surfWave, Point2D.Double position) {
@@ -582,6 +699,10 @@ public class GTSurferMove extends BaseMove {
 
     public Point2D.Double getBestPoint(EnemyWave surfWave, Point2D.Double startPosition, double startVelocity, double startHeading){
 
+        surfWave.predictedPosition = startPosition;
+        surfWave.predictedVelocity = startVelocity;
+        surfWave.predictedHeading = startHeading;
+
         double distance = surfWave.distanceTraveled;
 
         // Calculate how much of the wave we need to be concerned with
@@ -593,14 +714,18 @@ public class GTSurferMove extends BaseMove {
         Graphics g = _robot.getGraphics();
         if(surfWave.safePoints == null){
 
-            predictedPosition = (Point2D.Double)startPosition.clone();
-            predictedVelocity = startVelocity;
-            predictedHeading = startHeading;
             ArrayList forwardPoints = predictPositions(surfWave, 1);
 
-            predictedPosition = (Point2D.Double)startPosition.clone();
-            predictedVelocity = startVelocity;
-            predictedHeading = startHeading;
+            // Store copies of all the predicted final spots before we overwrite them inside the wave
+            double pheading = surfWave.predictedHeading;
+            double pvelocity = surfWave.predictedVelocity;
+            Point2D.Double pposition = surfWave.predictedPosition;
+
+            // Now reset all the original starting spots
+            surfWave.predictedHeading = startHeading;
+            surfWave.predictedPosition = startPosition;
+            surfWave.predictedVelocity = startVelocity;
+
             ArrayList reversePoints = predictPositions(surfWave, -1);
 
             int FminDangerIndex = 0;
@@ -641,6 +766,10 @@ public class GTSurferMove extends BaseMove {
             int minDangerIndex;
 
             if(FminDanger < RminDanger ){
+                surfWave.predictedPosition = pposition;
+                surfWave.predictedHeading = pheading;
+                surfWave.predictedVelocity = pvelocity;
+
                 bestPoints = forwardPoints;
                 minDangerIndex = FminDangerIndex;
             }
@@ -658,8 +787,8 @@ public class GTSurferMove extends BaseMove {
             surfWave.safePoints = bestPoints;
 
             //debugging - so that we should always be on top of the last point
-            bestPoints.add(0,new Point2D.Double(_robot.getX(), _robot.getY()));
-
+            //bestPoints.add(0,new Point2D.Double(_myLocation.x, _myLocation.y));
+            bestPoints.add(0, startPosition.clone());
         }
         else
         if(surfWave.safePoints.size() > 1)
@@ -689,6 +818,10 @@ public class GTSurferMove extends BaseMove {
     }
 
     public void doSurfing() {
+        int buffer = 36*2;
+        Rectangle2D.Double _safeZone
+                = new java.awt.geom.Rectangle2D.Double(buffer, buffer, 800-(buffer*2), 600-(buffer*2));
+
         BestWaves best = getClosestSurfableWave();
         EnemyWave surfWave = best.firstWave;
         double distance = _enemyLocation.distance(_myLocation);
@@ -731,14 +864,24 @@ public class GTSurferMove extends BaseMove {
 
             System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) + ", safepoint cnt: " + best.firstWave.safePoints.size());
 
-            if (tripTicks < bulletTicks)
+            Point2D.Double endp1 = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
+            Point2D.Double endp2 = CTUtils.project(best.firstWave.fireLocation, best.firstWave.absoluteBearing(endp1), endp1.distance(best.firstWave.fireLocation) + 25);
+
+            g.setColor(new Color(150, 0, 255));
+            g.drawOval((int)endp1.x, (int)endp1.y, 2, 2);
+
+            g.setColor(new Color(255, 0, 207));
+            g.drawOval((int)endp2.x, (int)endp2.y, 2, 2);
+
+
+
+            if (tripTicks < bulletTicks && bulletTicks < 100)
             {
                 // We are going to have some time to spare!!
                 double totalDist = 0;
                 Point2D.Double start = _myLocation;
-                for (int p = 0; p < best.firstWave.safePoints.size(); p++)
-                {
-                    Point2D.Double end = (Point2D.Double)best.firstWave.safePoints.get(p);
+                for (int p = 0; p < best.firstWave.safePoints.size(); p++) {
+                    Point2D.Double end = (Point2D.Double) best.firstWave.safePoints.get(p);
                     totalDist += start.distance(end);
 
                     start = end;
@@ -747,10 +890,86 @@ public class GTSurferMove extends BaseMove {
                 // So now we have to traverse totalDist pixels traveling up to 8 pixels a tick
                 int tickDiff = bulletTicks - tripTicks;
                 double extraPixels = (tickDiff) * 8.0; // This isn't right because of accel/decel
+                double desiredDistance = totalDist + extraPixels;
 
-                // We need to slow down..
-                double reducePerTick = extraPixels / tripTicks;
-                _robot.setMaxVelocity(8.0 - reducePerTick);
+                ArrayList<Point2D.Double> safePoints = new ArrayList<Point2D.Double>();
+
+                if (best.firstWave.redirected == false) {
+                    int spsize = best.firstWave.safePoints.size();
+                    double spdist = 0.0;
+                    double offset = 1.0;
+                    int iterations = 0;
+
+                    do {
+                        spdist = 0.0;
+                        offset += 0.1;
+
+                        //if (offset > extraPixels)
+                        //    break;
+                        if (iterations++ > 400)
+                            break;
+
+                        Point2D.Double lastp = _myLocation;
+                        safePoints.clear();
+
+                        for (int p = 0; p < spsize; p++) {
+                            Point2D.Double sp = (Point2D.Double) best.firstWave.safePoints.get(p);
+                            Point2D.Double sp2 = CTUtils.project(best.firstWave.fireLocation, best.firstWave.absoluteBearing(sp), sp.distance(best.firstWave.fireLocation) + (offset * ((double) p / spsize)));
+
+                            g.drawOval((int) sp2.x, (int) sp2.y, 2, 2);
+                            spdist += sp2.distance(lastp);
+
+                            safePoints.add(sp2);
+                            lastp = sp2;
+                        }
+                        //safePoints.add(endp2);
+                        //spdist += lastp.distance(endp2);
+                        endp2 = lastp;
+
+
+                    } while ((spdist + 4.0) < desiredDistance);
+
+                    System.out.println("Current Distance: " + totalDist + ", Offset " + offset + ", New Distance: " + spdist + ", Desired Distance: " + desiredDistance);
+                }
+
+                if (best.firstWave.redirected == false && safePoints.size() > 0 && _safeZone.contains(endp2) && CTUtils.cornerDistance(_myLocation, 800,600) > 100 && Math.abs(350-endp1.distance(best.firstWave.fireLocation)) < Math.abs(350-endp2.distance(best.firstWave.fireLocation))) {
+                    best.firstWave.safePoints = safePoints;
+                    best.firstWave.redirected = true;
+                    System.out.println("8888888888888888888888888888888888888888888888888888888888");
+                }
+                else
+                {
+
+                /*
+                Point2D.Double endp1 = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
+                Point2D.Double endp2 = CTUtils.project(endp1, CTUtils.absoluteBearing(best.firstWave.fireLocation, endp1), endp1.distance(best.firstWave.fireLocation) + 25);
+                double absBearing = CTUtils.absoluteBearing(_myLocation,_enemyLocation);
+
+                boolean direction = ((surfData)_surfData.get(0)).direction > 1 ? true : false;
+
+                double attackAngle = 0.4;
+                ArrayList<RobotState> possible = calculateFutureMoves(_enemyWaves, _myLocation.getX(), _myLocation.getY(),
+                        absBearing,
+                        _robot.getVelocity(), 8, _robot.getHeadingRadians(), attackAngle, false, _robot.getTime(), _radarScanner._fieldRect, 800, 600, 140, false);
+
+                best.firstWave.safePoints.clear();
+                g.setColor(new Color(255, 112, 8));
+                for (int j = 0; j < possible.size(); j++)
+                {
+                    RobotState state = possible.get(j);
+                    g.drawOval((int)state.location.x, (int)state.location.y, 3, 3);
+                    best.firstWave.safePoints.add(state.location);
+                }
+                */
+
+
+
+                    // We need to slow down..
+                    double reducePerTick = extraPixels / tripTicks;
+                    _robot.setMaxVelocity(8.0 - reducePerTick);
+
+                }
+
             }
             else
                 _robot.setMaxVelocity(8);
@@ -828,6 +1047,8 @@ public class GTSurferMove extends BaseMove {
     {
         public EnemyWave firstWave; // by time
         public EnemyWave secondWave; // by distance
+
+
 
         public BestWaves (EnemyWave first, EnemyWave second)
         {

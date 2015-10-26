@@ -22,8 +22,15 @@ class EnemyWave implements Comparable<EnemyWave> {
     public double forwardWallDistance;
     public double reverseWallDistance;
 
+    // Used by the pathing predictor, where we will end at when we are at the last point on safePoints
+    Point2D.Double predictedPosition;
+    double predictedVelocity;
+    double predictedHeading;
+
     ArrayList safePoints;
     double[] waveGuessFactors;
+
+    public boolean redirected = false;
 
     public EnemyWave() {
     }
