@@ -261,7 +261,7 @@ public class NNGun extends BaseGun {
                     if (!isDuplicate)
                         writeLogLine(inputs);
                     */
-                    inputs[1] = lastInput;
+                    //inputs[1] = lastInput;
 
                     isDuplicate = false;
                     break;
