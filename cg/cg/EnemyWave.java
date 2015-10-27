@@ -16,13 +16,11 @@ class EnemyWave implements Comparable<EnemyWave> {
 
     // Additional data
     public double lateralVelocity;
-    public double advancingVelocity;
     public double lateralDistanceLast10;
     public double acceleration;
     public int timeSinceDirectionChange;
     public double forwardWallDistance;
     public double reverseWallDistance;
-
 
     // Used by the pathing predictor, where we will end at when we are at the last point on safePoints
     Point2D.Double predictedPosition;
