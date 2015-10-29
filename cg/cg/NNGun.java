@@ -300,137 +300,6 @@ public class NNGun extends BaseGun {
 
 /*
 
-        g.setColor(Color.GREEN);
-        g.drawLine(graphx, graphy, graphx + ((int) graphWidth), graphy);
-        g.drawLine(graphx, graphy, graphx, graphy + 100);
-        g.drawLine(graphx + ((int) graphWidth), graphy, graphx + (int) graphWidth, graphy + 100);
-
-        if (waves.size() > 0) {
-
-            double bestdist = Double.MAX_VALUE;
-            int minIndex = 0;
-            int cTime = (int) _robot.getTime();
-
-            for (int i = 0; i < waves.size(); i++) {
-                NNBullet w = waves.get(i);
-                double dist = CTUtils.bulletVelocity(w.power) * (cTime - w.fireTime);
-
-                if (dist > bestdist && dist < 1000) {
-                    minIndex = i;
-                    bestdist = dist;
-                }
-
-            }
-            NNBullet closest = waves.get(minIndex);
-
-
-            RobotState[] moves = closest.moves;
-            Point2D.Double fireLocation = new Point2D.Double(closest.startX, closest.startY);
-
-            double lowBearing = CTUtils.absoluteBearing(fireLocation, moves[0].location);
-            double highBearing = CTUtils.absoluteBearing(fireLocation, moves[moves.length - 1].location);
-
-            double lowOffsetAngle = lowBearing - absBearing;
-            double highOffsetAngle = highBearing - absBearing;
-
-            g.setColor(new Color(0.47843137f, 0.33333334f, 0.16078432f, 0.8f));
-            Point2D.Double low = CTUtils.project(fireLocation, lowBearing, _radarScanner.nme.distance);
-            g.drawLine((int) closest.startX, (int) closest.startY, (int) low.getX(), (int) low.getY());
-
-            Point2D.Double high = CTUtils.project(fireLocation, highBearing, _radarScanner.nme.distance);
-            g.drawLine((int) closest.startX, (int) closest.startY, (int) high.getX(), (int) high.getY());
-
-
-            int bestDensityIndex = 0;
-            int lowestDensityIndex = 0;
-            int lowestGFIndex = GF_ZERO;
-            double bestDensity = -Double.MAX_VALUE, lowestDensity = Double.MAX_VALUE;
-
-            for (int i = closest.outputs.length; --i >= 0; ) {
-
-                double density = 0;
-                double u;
-                for (int j = closest.outputs.length; --j >= 0; ) {
-                    //double kdeDiff = points[i].danger - points[j].danger;
-                    double kdeDiff = closest.outputs[j] - closest.outputs[i];
-                    //double kdeDiff = Math.sqrt(Math.pow(points[i].danger - points[j].danger,2));
-                    //double kdeDiff = Math.abs(bestNodes.get(i).Distance - bestNodes.get(j).Distance);
-
-                    density += Math.exp(
-                            (
-                                    u = (kdeDiff) /// 2 // BAND_WIDTH OF 4 seems ok
-                            )
-                                    * u
-                                    * -0.5d
-                    );
-                }
-
-                if (closest.outputs[i] < closest.outputs[lowestGFIndex])
-                    lowestGFIndex = i;
-
-                if (density > bestDensity) {
-                    bestDensityIndex = i;
-                    bestDensity = density;
-                }
-
-                if (density < lowestDensity) {
-                    lowestDensityIndex = i;
-                    lowestDensity = density;
-                }
-
-            }
-
-
-            int plotpt = graphx + (int) (((double) closest.lowGF + 1) / 2.0 * graphWidth);
-
-            g.setColor(new Color(0.47843137f, 0.33333334f, 0.16078432f, 0.8f));
-            g.drawLine(plotpt, graphy, plotpt, graphy + 100);
-
-            plotpt = graphx + (int) (((double) closest.highGF + 1) / 2.0 * graphWidth);
-
-            g.setColor(new Color(0.47843137f, 0.33333334f, 0.16078432f, 0.8f));
-            g.drawLine(plotpt, graphy, plotpt, graphy + 100);
-
-
-            int bestGF = (int) Math.round((closest.getGuessFactor(ex, ey) + 1) * GFGun.GF_ZERO);
-            int bestGFPlotPoint1 = graphx + (int) (bestGF * (graphWidth / GF_ONE));
-
-
-            g.setColor(new Color(1.0f, 0.9137255f, 0.14509805f, 0.8f));
-            g.drawLine(bestGFPlotPoint1, graphy, bestGFPlotPoint1, graphy + 100);
-
-            double guessfactor = (double) (lowestGFIndex - GF_ZERO) / (double) GF_ZERO;
-            double angleOffset = direction * newWave.maxEscapeAngle / guessfactor;
-
-            int bestGFPlotPoint2 = graphx + (int) (((double) closest.fireIndex / GF_ONE) * graphWidth);
-
-            g.setColor(new Color(246, 15, 136, (int) (0.8 * 255)));
-            g.drawLine(bestGFPlotPoint2, graphy, bestGFPlotPoint2, graphy + 100);
-
-            g.setColor(new Color(196, 175, 246, (int) (0.8 * 255)));
-            g.setFont(new Font("Verdana", Font.PLAIN, 10));
-            g.drawString("Chosen GF", bestGFPlotPoint2 - 20, graphy - 10);
-            g.drawString("Correct GF", bestGFPlotPoint1 - 25, graphy - 20);
-            g.drawString("Closest Wave GF Plot", graphx, graphy + 105);
-
-            for (int i = 0; i < closest.outputs.length; i++) {
-                g.setColor(Color.MAGENTA);
-                g.drawOval(graphx + (int) (cnt * (graphWidth / GF_ONE)) - 1, graphy + (int) (closest.outputs[i] * 10), 2, 2);
-
-                g.setColor(Color.GREEN);
-                if (i == bestDensityIndex)
-                    g.drawOval(graphx + (int) (cnt * (graphWidth / GF_ONE)) - 2, graphy + (int) (closest.outputs[i] * 10), 4, 4);
-
-                g.setColor(Color.CYAN);
-                if (i == lowestDensityIndex)
-                    g.drawOval(graphx + (int) (cnt * (graphWidth / GF_ONE)) - 2, graphy + (int) (closest.outputs[i] * 10), 4, 4);
-
-                cnt++;
-            }
-
-        }
-        */
-
         for (int i = 0; i < waves.size(); i++) {
 
             NNBullet w = (NNBullet) (waves.get(i));
@@ -477,7 +346,7 @@ public class NNGun extends BaseGun {
             }
         }
 
-
+*/
     }
 
     /**

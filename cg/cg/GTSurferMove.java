@@ -39,7 +39,7 @@ public class GTSurferMove extends BaseMove {
     private ArrayList<MLDataPair> _lastHitsData;
 
     public static final int INPUT_LENGTH = 49;
-    public static final int OUTPUT_LENGTH = 171; //61;
+    public static final int OUTPUT_LENGTH = 113;
 
     public static int BINS = OUTPUT_LENGTH;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
@@ -155,8 +155,8 @@ public class GTSurferMove extends BaseMove {
 
             int sc = wave.bulletShadows.size();
             wave.shadowBullet(b, line, _robot.getTime() + timeOffset, g);
-            if (sc < wave.bulletShadows.size())
-                wave.safePoints = null;
+            //if (sc < wave.bulletShadows.size())
+            //    wave.safePoints = null;
         }
         while(++timeOffset < 110);
     }
@@ -304,7 +304,7 @@ public class GTSurferMove extends BaseMove {
         }
         _lastGunHeat = _robot.getGunHeat();
 
-        int topx = 5, topy = 5;
+        int topx = 800-155, topy = 5;
 
 
 
@@ -400,35 +400,54 @@ public class GTSurferMove extends BaseMove {
 
     }
 
+    public Color getShade (double i)
+    {
+        i = 1.0 - CTUtils.clamp(i, 0.0, 1.0);
+
+        // Heat map is red, orange, yellow, green, cyan, blue
+        Color colors[] = {new Color(255, 20, 0),
+                new Color(255, 112, 8),
+                new Color(255, 245, 0),
+                new Color(45, 255, 0),
+                new Color(0, 228, 255),
+                new Color(0, 74, 128)};
+
+        return colors[(int)CTUtils.clamp(Math.round(i*colors.length), 0, colors.length-1)];
+    }
+
     public void drawWaves() {
 
         Graphics g = _robot.getGraphics();
 
         BestWaves best = getClosestSurfableWave();
-        EnemyWave surfWave = best.firstWave;
         double[] shadows = new double[OUTPUT_LENGTH];
-
-        if (surfWave.safePoints != null)
-        {
-            Point2D.Double pt = (Point2D.Double)surfWave.safePoints.get(surfWave.safePoints.size()-1);
-            g.setColor(new Color(1, 255, 0));
-            g.drawRect((int)pt.x-18, (int)pt.y-18, 36, 36);
-        }
 
         Arrays.fill(shadows, 1.0);
 
-        for (int i = 0; i < surfWave.bulletShadows.size(); i++)
+        if (best != null && best.firstWave != null && best.firstWave.safePoints != null)
         {
-            double[] bs = surfWave.bulletShadows.get(i);
+            EnemyWave surfWave = best.firstWave;
+            Point2D.Double pt = (Point2D.Double)surfWave.safePoints.get(surfWave.safePoints.size()-1);
+            g.setColor(new Color(1, 255, 0));
+            g.drawRect((int)pt.x-18, (int)pt.y-18, 36, 36);
 
-            int shadowStart = getFactorIndex(bs[0]);
-            int shadowEnd = getFactorIndex(bs[1]);
-
-            for (int k = shadowStart; k <= shadowEnd; k++)
+            for (int i = 0; i < surfWave.bulletShadows.size(); i++)
             {
-                shadows[k] = 0.0;
+                double[] bs = surfWave.bulletShadows.get(i);
+
+                int shadowStart = getFactorIndex(bs[0]);
+                int shadowEnd = getFactorIndex(bs[1]);
+
+                for (int k = shadowStart; k <= shadowEnd; k++)
+                {
+                    shadows[k] = 0.0;
+                }
             }
+
         }
+
+
+
 
         for (int i = 0; i < _enemyWaves.size(); i++) {
 
@@ -450,16 +469,17 @@ public class GTSurferMove extends BaseMove {
             g.setColor(java.awt.Color.green);
             int cTime = (int) _robot.getTime();
 
-            if (ew.waveGuessFactors != null) {
+            if (ew.waveGuessFactors != null && i == 0) {
                 for (int p = 0; p < ew.waveGuessFactors.length; p++) {
                     double angleOffset = angleDivision * (double) p * 0;
 
-                    float shade = (float) ew.waveGuessFactors[p];
-                    shade = (float) CTUtils.clamp(shade * 10, 0.2, 1.0);
-                    g.setColor(new Color(0, shade, 1, 1.0f));
+                    //float shade = (float) ew.waveGuessFactors[p];
+                    //shade = (float) CTUtils.clamp(shade * 10, 0.2, 1.0);
+                    //g.setColor(new Color(0, shade, 1, 1.0f));
+                    g.setColor(getShade(ew.waveGuessFactors[p]));
 
                     if (shadows[p] < 1.0)
-                        g.setColor(new Color(255, 245, 0));
+                        g.setColor(new Color(74, 95, 69));
 
                     //System.out.print(shade + " ");
                     //System.out.println("DA: " + ew.directAngle + ", AD: " + angleDivision + ", MEA: " + ew.maxEscapeAngle);
@@ -595,7 +615,7 @@ public class GTSurferMove extends BaseMove {
         double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*2, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*5, centers);
 
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
@@ -637,7 +657,7 @@ public class GTSurferMove extends BaseMove {
 
             if (hitWave != null) {
                 logHit(hitWave, hitBulletLocation, true);
-
+                //hitWave.shadowBullet();
                 hitWave.collidedWithBullet = true;
                 // We can remove this wave now, of course.
                 // _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
@@ -904,22 +924,19 @@ public class GTSurferMove extends BaseMove {
             int shadowStart = getFactorIndex(bs[0]);
             int shadowEnd = getFactorIndex(bs[1]);
 
-            for (int k = shadowStart; k <= shadowEnd; k++)
-                surfWave.waveGuessFactors[k] = 0;
-
             //System.out.println("shadowStart: " + shadowStart + ", end: " + shadowEnd);
             //System.out.println("Gf: " + gf + ", shadow.min: " + bs[0] + ", shadow.max: " + bs[1]);
 
             for (int k = shadowStart; k <= shadowEnd; k++)
             {
-                hasShadows = true;
+                //hasShadows = true;
                 shadows[k] = 0.0;
                 surfWave.waveGuessFactors[k] = 0;
             }
         }
 
-        if (hasShadows)
-            System.out.println(Arrays.toString(shadows));
+        //if (hasShadows)
+        //    System.out.println(Arrays.toString(shadows));
 
         double danger = 0.0;
         for (int i = startIndex; i <= endIndex; i++)
@@ -1189,7 +1206,7 @@ public class GTSurferMove extends BaseMove {
                         )
                 {
                     best.firstWave.safePoints = safePoints;
-                    //p1 = getBestPoint(best.firstWave, (Point2D.Double)_myLocation.clone(), _robot.getVelocity(), _robot.getHeadingRadians());
+                    p1 = getBestPoint(best.firstWave, (Point2D.Double)_myLocation.clone(), _robot.getVelocity(), _robot.getHeadingRadians());
 
                     /*
                     bulletTicks = CTUtils.bulletTicks(best.firstWave.distanceTraveled - best.firstWave.fireLocation.distance(endp2), best.firstWave.bulletPower);
@@ -1202,7 +1219,7 @@ public class GTSurferMove extends BaseMove {
                 }
 
                     // We need to slow down..
-                //if (!surfWave.redirected)
+                if (!surfWave.redirected)
                 {
                     double reducePerTick = extraPixels / tripTicks;
                     _robot.setMaxVelocity(8.0 - reducePerTick);
