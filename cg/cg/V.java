@@ -2,6 +2,7 @@ package cg;
 
 import robocode.*;
 
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
@@ -34,6 +35,7 @@ public class V extends AdvancedRobot {
         if (_movement == null && mode != Modes.TARGET_ONLY)
             _movement = new Movement(this, _radarScanner);
 
+        setBulletColor(new Color(255, 248, 96));
         setAdjustGunForRobotTurn(true);
         setAdjustRadarForGunTurn(true);
 
@@ -81,6 +83,7 @@ public class V extends AdvancedRobot {
             playerStats.add(true, (int) _radarScanner.nme.distance);
 
     }
+
 
     public void onBulletMissed(BulletMissedEvent e) {
 

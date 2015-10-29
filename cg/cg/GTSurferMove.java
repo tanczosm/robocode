@@ -15,9 +15,7 @@ import robocode.util.Utils;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * Created by tanczosm on 10/14/2015.
@@ -41,7 +39,7 @@ public class GTSurferMove extends BaseMove {
     private ArrayList<MLDataPair> _lastHitsData;
 
     public static final int INPUT_LENGTH = 49;
-    public static final int OUTPUT_LENGTH = 61;
+    public static final int OUTPUT_LENGTH = 171; //61;
 
     public static int BINS = OUTPUT_LENGTH;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
@@ -49,11 +47,13 @@ public class GTSurferMove extends BaseMove {
     public Point2D.Double _enemyLocation;  // enemy bot's location
 
     public Point2D.Double _lastGoToPoint;
+    public double _lastGunHeat;
     public double direction = 1;
 
     public ArrayList<EnemyWave> _enemyWaves;
     public ArrayList _surfData;
     public ArrayList<Double> _LateralVelocityLast10;
+    private final LinkedList<Bullet> bullets = new LinkedList<Bullet>();
 
     // TEMPORARY
     int debugFactorIndex = 0;
@@ -89,6 +89,7 @@ public class GTSurferMove extends BaseMove {
         _surfData = new ArrayList();
         _LateralVelocityLast10 = new ArrayList<Double>();
         _enemyLocation = new Point2D.Double();
+        _lastGunHeat = _robot.getGunHeat();
 
         basicNetwork = new BasicNetwork();
         basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
@@ -121,7 +122,64 @@ public class GTSurferMove extends BaseMove {
     {
     }
 
+    private void calculateShadow(final EnemyWave wave, final Bullet b) {
 
+        if (b == null)
+            return;
+
+        Graphics g = _robot.getGraphics();
+
+        // until bullet is past wave calculate ahead
+        long timeOffset = 0;
+        final double x = b.getX();
+        final double y = b.getY();
+        final double h = b.getHeadingRadians();
+        final double v = b.getVelocity();
+        int colr = 0;
+        do {
+            final double r = wave.getRadius(_robot.getTime() + timeOffset);
+            final Line line = Line.projection(x, y, h, v * timeOffset, v * (timeOffset + 1));
+            //System.out.println("Calculating shadow..");
+            if(_myLocation.distanceSq(line.x1, line.y1) > wave.fireLocation.distanceSq(_myLocation) - r * r) break;
+
+            /*
+            if (colr++ % 2 == 0)
+                g.setColor(new Color(128, 180, 255));
+            else
+                g.setColor(new Color(70, 70, 255));
+
+            g.drawLine((int)line.x1, (int)line.y1, (int)line.x2, (int)line.y2);
+            */
+            //g.setColor(new Color(255, 83, 70));
+            //g.drawOval((int)wave.fireLocation.x-(int)(r/2), (int)wave.fireLocation.y-(int)(r/2),(int)r, (int)r);
+
+            int sc = wave.bulletShadows.size();
+            wave.shadowBullet(b, line, _robot.getTime() + timeOffset, g);
+            if (sc < wave.bulletShadows.size())
+                wave.safePoints = null;
+        }
+        while(++timeOffset < 110);
+    }
+
+    private void calculateShadowsForBullet(final Bullet b) {
+        for(final EnemyWave wave : _enemyWaves) {
+            //if(!wave.isReal) continue;
+            calculateShadow(wave, b);
+        }
+    }
+
+    private void calculateShadowsForWave(final EnemyWave wave) {
+        //if(wave.imaginary) return;
+        final Iterator<Bullet> it = bullets.iterator();
+        while(it.hasNext()) {
+            final Bullet b = it.next();
+            if(b == null || !b.isActive()) {
+                it.remove();
+                continue;
+            }
+            calculateShadow(wave, b);
+        }
+    }
 
     // This is a rectangle that represents an 800x600 battle field,
 // used for a simple, iterative WallSmoothing method (by Kawigi).
@@ -204,6 +262,7 @@ public class GTSurferMove extends BaseMove {
             ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
             ew.direction = _surf.direction;
             ew.directAngle = _surf.absBearing;
+            ew.maxEscapeAngle = CTUtils.maxEscapeAngle(ew.bulletVelocity);
             ew.fireLocation = (Point2D.Double)_enemyLocation.clone(); // last tick
 
             ew.acceleration = _surf.acceleration;
@@ -215,6 +274,8 @@ public class GTSurferMove extends BaseMove {
             ew.advancingVelocity = _surf.advancingVelocity;
 
             _enemyWaves.add(ew);
+
+            calculateShadowsForWave(ew);
         }
 
         _lastVelocity = velocity;
@@ -233,7 +294,19 @@ public class GTSurferMove extends BaseMove {
         updateWaves();
         doSurfing();
 
+        //System.out.println("Gunheat: " + _lastGunHeat);
+        if (_lastGunHeat < _robot.getGunHeat())
+        {
+            //System.out.println("Calculating shadows...");
+            bullets.add(Targeting.lastBullet);
+            // calculate where it will be on all future waves
+            calculateShadowsForBullet(Targeting.lastBullet);
+        }
+        _lastGunHeat = _robot.getGunHeat();
+
         int topx = 5, topy = 5;
+
+
 
         drawFactor(_surfStats, 0, _surfStats.length, "Firing Output", topx, topy, 0);
 
@@ -327,20 +400,109 @@ public class GTSurferMove extends BaseMove {
 
     }
 
+    public void drawWaves() {
+
+        Graphics g = _robot.getGraphics();
+
+        BestWaves best = getClosestSurfableWave();
+        EnemyWave surfWave = best.firstWave;
+        double[] shadows = new double[OUTPUT_LENGTH];
+
+        if (surfWave.safePoints != null)
+        {
+            Point2D.Double pt = (Point2D.Double)surfWave.safePoints.get(surfWave.safePoints.size()-1);
+            g.setColor(new Color(1, 255, 0));
+            g.drawRect((int)pt.x-18, (int)pt.y-18, 36, 36);
+        }
+
+        Arrays.fill(shadows, 1.0);
+
+        for (int i = 0; i < surfWave.bulletShadows.size(); i++)
+        {
+            double[] bs = surfWave.bulletShadows.get(i);
+
+            int shadowStart = getFactorIndex(bs[0]);
+            int shadowEnd = getFactorIndex(bs[1]);
+
+            for (int k = shadowStart; k <= shadowEnd; k++)
+            {
+                shadows[k] = 0.0;
+            }
+        }
+
+        for (int i = 0; i < _enemyWaves.size(); i++) {
+
+            EnemyWave ew = (EnemyWave)_enemyWaves.get(i);
+
+
+            Point2D.Double center = new Point2D.Double(ew.fireLocation.x, ew.fireLocation.y);
+
+            //int radius = (int)(w.distanceTraveled + w.bulletVelocity);
+
+            double angleDivision = (ew.maxEscapeAngle * 2.0 / (double)OUTPUT_LENGTH);
+            int radius = (int)ew.getRadius(_robot.getTime());
+
+            radius += ew.bulletVelocity;
+            g.setColor(new Color(255, 188, 0));
+            if (radius - 40 < center.distance(_myLocation))
+                g.drawOval((int) (center.x - radius), (int) (center.y - radius), radius * 2, radius * 2);
+
+            g.setColor(java.awt.Color.green);
+            int cTime = (int) _robot.getTime();
+
+            if (ew.waveGuessFactors != null) {
+                for (int p = 0; p < ew.waveGuessFactors.length; p++) {
+                    double angleOffset = angleDivision * (double) p * 0;
+
+                    float shade = (float) ew.waveGuessFactors[p];
+                    shade = (float) CTUtils.clamp(shade * 10, 0.2, 1.0);
+                    g.setColor(new Color(0, shade, 1, 1.0f));
+
+                    if (shadows[p] < 1.0)
+                        g.setColor(new Color(255, 245, 0));
+
+                    //System.out.print(shade + " ");
+                    //System.out.println("DA: " + ew.directAngle + ", AD: " + angleDivision + ", MEA: " + ew.maxEscapeAngle);
+                    Point2D.Double p2 = CTUtils.project(center, (ew.directAngle ) + (angleDivision * p) - (angleDivision * (OUTPUT_LENGTH / 2)), radius-ew.bulletVelocity);
+                    Point2D.Double p3 = CTUtils.project(p2, (ew.directAngle) + (angleDivision * p) - (angleDivision * (OUTPUT_LENGTH / 2)), (int) (ew.bulletVelocity));
+
+//                g.drawOval((int) (p2.x - 1), (int) (p2.y - 1), 2, 2);
+                    g.drawLine((int) p2.getX(), (int) p2.getY(), (int) p3.getX(), (int) p3.getY());
+                }
+            }
+        }
+    }
+
     public void updateWaves() {
+        Graphics g = _robot.getGraphics();
+
+
         for (int x = 0; x < _enemyWaves.size(); x++) {
             EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
 
             ew.distanceTraveled = (_robot.getTime() - ew.fireTime) * ew.bulletVelocity;
             ew.currentDistanceToPlayer = _myLocation.distance(ew.fireLocation) - ew.distanceTraveled;
 
+            g.setColor(new Color(128, 1, 0));
+            g.drawOval((int)(ew.fireLocation.x-(ew.distanceTraveled)), (int)(ew.fireLocation.y-(ew.distanceTraveled)), (int)ew.distanceTraveled*2, (int)ew.distanceTraveled*2);
+
+            if (ew.didIntersect(_myLocation, _robot.getTime()))
+            {
+                logHit(ew, _myLocation, false);
+                _enemyWaves.remove(x);
+                x--;
+            }
+            /*
             if (ew.distanceTraveled >
                     _myLocation.distance(ew.fireLocation) + 50) {
                 logHit(ew, _myLocation, false);
                 _enemyWaves.remove(x);
                 x--;
-            }
+            }*/
         }
+
+        drawWaves();
+
     }
 
     public BestWaves getClosestSurfableWave() {
@@ -426,24 +588,14 @@ public class GTSurferMove extends BaseMove {
         if (!isHit)
             return;  // Bail.. don't log hits that aren't real
 
-        /*
-        int index = getFactorIndex(ew, targetLocation);
-
-        for (int x = 0; x < BINS; x++) {
-            // for the spot bin that we were hit on, add 1;
-            // for the bins next to it, add 1 / 2;
-            // the next one, add 1 / 5; and so on...
-            _surfStats[x] += 1.0 / (Math.pow(index - x, 2) + 1);
-        }
-        */
         double enemyX = ew.fireLocation.getX(), enemyY = ew.fireLocation.getY();
         double startX = targetLocation.getX(), startY = targetLocation.getY();
 
         double gf = getGuessFactor(ew, targetLocation);
         double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
-        double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*5, centers);
+        double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*2, centers);
 
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
@@ -486,8 +638,9 @@ public class GTSurferMove extends BaseMove {
             if (hitWave != null) {
                 logHit(hitWave, hitBulletLocation, true);
 
+                hitWave.collidedWithBullet = true;
                 // We can remove this wave now, of course.
-                _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
+                // _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
             }
         }
 
@@ -498,6 +651,9 @@ public class GTSurferMove extends BaseMove {
         // If the _enemyWaves collection is empty, we must have missed the
         // detection of this wave somehow.
         if (!_enemyWaves.isEmpty()) {
+
+            removeShadow(e.getBullet());
+
             Point2D.Double hitBulletLocation = new Point2D.Double(
                     e.getBullet().getX(), e.getBullet().getY());
             EnemyWave hitWave = null;
@@ -522,8 +678,20 @@ public class GTSurferMove extends BaseMove {
                 _enemyWaves.remove(_enemyWaves.lastIndexOf(hitWave));
             }
         }
+
     }
 
+    private void removeShadow(final Bullet b) {
+        for(final EnemyWave wave : _enemyWaves) {
+            // check if bullet has yet to pass through wave
+            final double r = wave.getRadius(_robot.getTime());
+            final double d = wave.fireLocation.distanceSq(_myLocation) - r * r;
+            if(d > _myLocation.distanceSq(b.getX(), b.getY())) // if it hasn't,
+                // remove it
+                // from the wave
+                wave.removeShadow(b);
+        }
+    }
 
     // Calculate the path a robot can take with smoothing..
     public ArrayList<RobotState> calculateFutureMoves (ArrayList<EnemyWave> waves, double x, double y, double absBearingRadians, double velocity, double maxVelocity, double heading, double attackAngle, boolean clockwise, long currentTime, Rectangle2D.Double battleField,	double bfWidth, double bfHeight,
@@ -718,17 +886,50 @@ public class GTSurferMove extends BaseMove {
     // Calculates the average danger over a particular span of guess factors
     public double checkDangerSpan(EnemyWave surfWave, Point2D.Double position, int totalSpan)
     {
-        int index = getFactorIndex(surfWave, position);
+        double[] shadows = new double[OUTPUT_LENGTH];
+        double gf = getGuessFactor(surfWave, position);
+        int index = getFactorIndex(gf);
         int halfSpan = (int)Math.max(1.0, Math.ceil(totalSpan/2.0));
         int startIndex = (int)CTUtils.clamp(index-halfSpan, 0, index);
         int endIndex = (int)CTUtils.clamp(index+halfSpan, index, OUTPUT_LENGTH-1);
 
+        boolean hasShadows = false;
+
+        Arrays.fill(shadows, 1.0);
+
+        for (int i = 0; i < surfWave.bulletShadows.size(); i++)
+        {
+            double[] bs = surfWave.bulletShadows.get(i);
+
+            int shadowStart = getFactorIndex(bs[0]);
+            int shadowEnd = getFactorIndex(bs[1]);
+
+            for (int k = shadowStart; k <= shadowEnd; k++)
+                surfWave.waveGuessFactors[k] = 0;
+
+            //System.out.println("shadowStart: " + shadowStart + ", end: " + shadowEnd);
+            //System.out.println("Gf: " + gf + ", shadow.min: " + bs[0] + ", shadow.max: " + bs[1]);
+
+            for (int k = shadowStart; k <= shadowEnd; k++)
+            {
+                hasShadows = true;
+                shadows[k] = 0.0;
+                surfWave.waveGuessFactors[k] = 0;
+            }
+        }
+
+        if (hasShadows)
+            System.out.println(Arrays.toString(shadows));
+
         double danger = 0.0;
         for (int i = startIndex; i <= endIndex; i++)
         {
-            danger += surfWave.waveGuessFactors[i];
+            danger += surfWave.waveGuessFactors[i] * shadows[i];
+
         }
         danger /= totalSpan;
+
+
         //danger *= position.distance(surfWave.fireLocation) - surfWave.distanceTraveled;
 
         return danger;
@@ -895,13 +1096,13 @@ public class GTSurferMove extends BaseMove {
             g.setColor(Color.RED);
             g.drawOval((int)p1.x, (int)p1.y, 4, 4);
 
-            Point2D.Double pdest = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
+            Point2D.Double pdest = (Point2D.Double) best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
             double distRemain = pdest.distance(_myLocation);
             int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
             int tripTicks = best.firstWave.safePoints.size();
 
             //System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) + ", safepoint cnt: " + best.firstWave.safePoints.size());
-            System.out.println("Vel: " + best.firstWave.predictedVelocity + ", size: " + best.firstWave.safePoints.size());
+            //System.out.println("Vel: " + best.firstWave.predictedVelocity + ", size: " + best.firstWave.safePoints.size());
 
             Point2D.Double endp1 = (Point2D.Double)best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
             Point2D.Double endp2 = CTUtils.project(best.firstWave.fireLocation, best.firstWave.absoluteBearing(endp1), endp1.distance(best.firstWave.fireLocation) + 25);
@@ -971,7 +1172,7 @@ public class GTSurferMove extends BaseMove {
 
                     } while ((spdist + 4.0) < desiredDistance);
 
-                    System.out.println("Current Distance: " + totalDist + ", Offset " + offset + ", New Distance: " + spdist + ", Desired Distance: " + desiredDistance);
+                    //System.out.println("Current Distance: " + totalDist + ", Offset " + offset + ", New Distance: " + spdist + ", Desired Distance: " + desiredDistance);
                 }
 
                 g.setColor(new Color(255, 0, 207));

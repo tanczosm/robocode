@@ -13,6 +13,8 @@ import java.util.ArrayList;
 
 public class Targeting {
 
+    public static Bullet lastBullet = null;
+
     private AdvancedRobot _robot;
     private RadarScanner _radarScanner;
     private StatsTracker _playerStats;
@@ -129,9 +131,9 @@ public class Targeting {
                     ) {
                 //s.IsRealBullet = true;
 
-                Bullet b;
+                //Bullet b;
 
-                if ((_robot.getEnergy() > 0 /*(RadarScanner.FIRE_POWER + 0.01)*/ || _radarScanner.nme.energy == 0) && (b = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
+                if ((_robot.getEnergy() > 0 /*(RadarScanner.FIRE_POWER + 0.01)*/ || _radarScanner.nme.energy == 0) && (lastBullet = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
                     _aiming = false;
                     _shotsFired++;
                     reportAccuracy();

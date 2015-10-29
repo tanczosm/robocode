@@ -3,6 +3,7 @@ package cg;
 import robocode.AdvancedRobot;
 import robocode.util.Utils;
 
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
@@ -43,6 +44,152 @@ public class CTUtils {
         return Utils.normalAbsoluteAngle(oDir * (wallAngle - eAngle));
     }
 
+
+    /**
+     * Returns an array of vectors where the rectangle intersect a circle
+     * at c with radius r.
+     */
+    public static final Point2D.Double[] intersectRectCircle(Rectangle2D.Double rect, Point2D.Double c, double r) {
+        double[] pnts = intersectRectCircle(rect.getMinX(),rect.getMinY(),
+                rect.getWidth(),rect.getHeight(), c.x, c.y, r);
+        Point2D.Double[] output = new Point2D.Double[pnts.length/2];
+        for(int i = 0; i<output.length; ++i) {
+            output[i] = new Point2D.Double(pnts[i*2],pnts[i*2+1]);
+        }
+        return output;
+    }
+
+    public static final double[][] intersectRectCircleD(Rectangle2D.Double rect, Point2D.Double c, double r) {
+        double[] pnts = intersectRectCircle(rect.getMinX(),rect.getMinY(),
+                rect.getWidth(),rect.getHeight(), c.x, c.y, r);
+        double[][] output = new double[pnts.length/2][2];
+        for(int i = 0; i<output.length; ++i) {
+            output[i] = new double[]{pnts[i*2],pnts[i*2+1]};
+        }
+        return output;
+    }
+
+    public static final double[] intersectRectCircle(
+            double rx, double ry, double rw, double rh,
+            double cx, double cy, double r) {
+        double mx = rx+rw;
+        double my = ry+rh;
+
+        //every line can intersect twice, meaning 4 points at most per line
+        double[] intersect = new double[16];
+        int n = 0;
+
+        double[] in = intersectSegCircle(cx,cy,r,rx,ry,mx,ry); //top
+		/*
+		 * for(int i=0;i!=in.length;++i)
+		 *     intersect[n++] = in[i];
+		 *
+		 * Equivalent to below, just the hardcoded ifs are faster
+		 */
+        if(in.length == 2) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+        } else if(in.length == 4) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+            intersect[n++] = in[2];
+            intersect[n++] = in[3];
+        }
+
+        in = intersectSegCircle(cx,cy,r,rx,my,mx,my); //bottom
+        if(in.length == 2) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+        } else if(in.length == 4) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+            intersect[n++] = in[2];
+            intersect[n++] = in[3];
+        }
+
+        in = intersectSegCircle(cx,cy,r,rx,ry,rx,my); //left
+        if(in.length == 2) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+        } else if(in.length == 4) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+            intersect[n++] = in[2];
+            intersect[n++] = in[3];
+        }
+
+        in = intersectSegCircle(cx,cy,r,mx,ry,mx,my); //right
+        if(in.length == 2) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+        } else if(in.length == 4) {
+            intersect[n++] = in[0];
+            intersect[n++] = in[1];
+            intersect[n++] = in[2];
+            intersect[n++] = in[3];
+        }
+
+        double[] output = new double[n];
+        for(int i=0;i!=n;++i)
+            output[i] = intersect[i];
+
+        return output;
+    }
+
+    public static final double[] intersectSegCircle(double cx, double cy, double r,
+                                                    double lax, double lay, double lbx, double lby) {
+
+        double diffx = cx - lax;
+        double diffy = cy - lay;
+
+        double dirx = lbx-lax;
+        double diry = lby-lay;
+        double l = Math.sqrt(dirx * dirx + diry * diry);
+
+        dirx /= l;
+        diry /= l;
+
+        double a0 = diffx*diffx+diffy*diffy - r*r;
+        double a1 = diffx*dirx+diffy*diry;
+
+        double discr = a1 * a1 - a0;
+
+        if (discr > 0) {
+			/* The circle and line meet at two places */
+            double lengthSq = (lbx-lax)*(lbx-lax)+(lby-lay)*(lby-lay);
+
+            discr = Math.sqrt(discr);
+            double m1 = a1 - discr;
+            double m2 = a1 + discr;
+
+            if(m1 > 0 && m1*m1 < lengthSq && m2 > 0 && m2*m2 < lengthSq) {
+                return new double[] {
+                        lax + m1 * dirx, lay + m1 * diry,
+                        lax + m2 * dirx, lay + m2 * diry
+                };
+            } else if (m1 > 0 && m1*m1 < lengthSq) {
+                return new double[] {
+                        lax + m1 * dirx, lay + m1 * diry
+                };
+            } else if (m2 > 0 && m2*m2 < lengthSq) {
+                return new double[] {
+                        lax + m2 * dirx, lay + m2 * diry
+                };
+            }
+        } else if (discr == 0) {
+            double lengthSq = (lbx-lax)*(lbx-lax)+(lby-lay)*(lby-lay);
+			/* We have ourselves a tangent */
+            if (a1 > 0 && a1*a1 < lengthSq) {
+                return new double[] {
+                        lax+a1*dirx, lay+a1*diry
+                };
+            }
+        }
+
+        return new double[0];
+    }
+
+
     // CREDIT: from CassiusClay, by PEZ
     //   - returns point length away from sourceLocation, at angle
     // robowiki.net?CassiusClay
@@ -78,6 +225,9 @@ public class CTUtils {
         return Math.ceil((1 + (power / 5)) / coolingRate);
     }
 
+    public static double botWidthAimAngle(double distance, double width) {
+        return Math.abs(width / distance);
+    }
     public static double botWidthAimAngle(double distance) {
         return Math.abs(18.0 / distance);
     }

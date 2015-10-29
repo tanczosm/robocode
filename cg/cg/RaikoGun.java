@@ -179,7 +179,7 @@ public class RaikoGun {
 
 		
 		if (bot.getEnergy() > 1 || distanceIndex == 0)
-			bot.setFire(bulletPower);
+			Targeting.lastBullet = bot.setFireBullet(bulletPower);
 		
 		bot.setTurnRadarRightRadians(Utils.normalRelativeAngle(enemyAbsoluteBearing - bot.getRadarHeadingRadians()) * 2);
 
