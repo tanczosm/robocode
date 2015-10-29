@@ -412,7 +412,7 @@ public class GTSurferMove extends BaseMove {
                 new Color(0, 228, 255),
                 new Color(0, 74, 128)};
 
-        return colors[(int)CTUtils.clamp(Math.round(i*colors.length), 0, colors.length-1)];
+        return colors[(int)CTUtils.clamp(Math.round(i * colors.length), 0, colors.length - 1)];
     }
 
     public void drawWaves() {
@@ -479,7 +479,7 @@ public class GTSurferMove extends BaseMove {
                     g.setColor(getShade(ew.waveGuessFactors[p]));
 
                     if (shadows[p] < 1.0)
-                        g.setColor(new Color(74, 95, 69));
+                        g.setColor(new Color(141, 64, 169));
 
                     //System.out.print(shade + " ");
                     //System.out.println("DA: " + ew.directAngle + ", AD: " + angleDivision + ", MEA: " + ew.maxEscapeAngle);
@@ -1115,8 +1115,19 @@ public class GTSurferMove extends BaseMove {
 
             Point2D.Double pdest = (Point2D.Double) best.firstWave.safePoints.get(best.firstWave.safePoints.size()-1);
             double distRemain = pdest.distance(_myLocation);
-            int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
+
+            double[][] corners = best.firstWave.getCorners(new Rectangle2D.Double(pdest.x-18, pdest.y-18, 36, 36));
+            double wd1 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - best.firstWave.distanceTraveled;
+            double wd2 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - best.firstWave.distanceTraveled;
+            double wd3 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - best.firstWave.distanceTraveled;
+            double wd4 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - best.firstWave.distanceTraveled;
+
+//            int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
+            int bulletTicks = CTUtils.bulletTicks(Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4)), best.firstWave.bulletPower);
             int tripTicks = best.firstWave.safePoints.size();
+
+            System.out.println("Original bullet ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) +
+                               ", New: " + bulletTicks);
 
             //System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) + ", safepoint cnt: " + best.firstWave.safePoints.size());
             //System.out.println("Vel: " + best.firstWave.predictedVelocity + ", size: " + best.firstWave.safePoints.size());

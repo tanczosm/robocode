@@ -69,7 +69,12 @@ public class Targeting {
 
     public void selectGun() {
 
-        _currentGun = guns.get(2);
+        if (_radarScanner.nme.energy < 0.1) {
+            _currentGun = guns.get(0);
+        }
+        else {
+            _currentGun = guns.get(2);
+        }
 
     }
 

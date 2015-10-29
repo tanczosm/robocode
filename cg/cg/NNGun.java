@@ -247,12 +247,23 @@ public class NNGun extends BaseGun {
         if (waves.size() > 0) {
 
             double[] inputs = null;
+            int closest = 0;
+            double closestDistance = Double.MAX_VALUE;
 
 
-            for (int p = 0; p < waves.size(); p++)
+            for (int p = 0; p < waves.size(); p++) {
+                NNBullet wave = (NNBullet) waves.get(p);
 
-                if (waves.get(p).isReal) {
-                    inputs = waves.get(p).inputs;
+                if (wave.isReal) {
+
+
+                    double dist = (_robot.getTime() - wave.fireTime) * wave.getBulletSpeed() - wave.fireLocation.distance(_radarScanner._myLocation);
+                    if (dist < closestDistance) {
+
+                        closestDistance = dist;
+                        closest = p;
+                        inputs = wave.inputs;
+                    }
 
                     /*
                     if (inputs[1] == lastInput)
@@ -266,6 +277,7 @@ public class NNGun extends BaseGun {
                     isDuplicate = false;
                     break;
                 }
+            }
 
             if (inputs != null) {
                 drawFactor(inputs, 0, 11, "Distance", 0, 0, 0);
@@ -275,11 +287,10 @@ public class NNGun extends BaseGun {
                 drawFactor(inputs, 11 + 8 + 11 + 9, 6, "Dist Last 10 Ticks", 0, 0, 4);
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6, 7, "Time Since Vel Change", 0, 0, 5);
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7, 7, "Since Direction Change", 0, 0, 6);
-                drawFactor(inputs, 11+8+11+9+6+7+7, 7, "Forward Wall Radians", 0, 0, 7);
-                drawFactor(inputs, 11+8+11+9+6+7+7+7, 4, "Reverse Wall Radians", 0, 0, 8);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7, 7, "Forward Wall Radians", 0, 0, 7);
+                drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7 + 7, 4, "Reverse Wall Radians", 0, 0, 8);
 
             }
-
         }
 
         Graphics2D g = _robot.getGraphics();

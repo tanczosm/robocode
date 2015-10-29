@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 public class NNBullet {
     public double startX, startY, startBearing, power, directAngle, maxEscapeAngle;
+    public Point2D.Double fireLocation;
     public long fireTime;
     public double direction;
     public double[] outputs;
@@ -22,6 +23,7 @@ public class NNBullet {
                     int direction, long time, double[] inputs) {
         startX = x;
         startY = y;
+        fireLocation = new Point2D.Double(startX, startY);
         startBearing = bearing;
         this.power = power;
         this.directAngle = directAngle;

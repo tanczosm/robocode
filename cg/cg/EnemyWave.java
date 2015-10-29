@@ -16,7 +16,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     private static final double MAX_ESCAPE_FACTOR = 1.1;
 
     Point2D.Double fireLocation;
-    public static Rectangle2D.Double hitbox = new Rectangle2D.Double();
+    public Rectangle2D.Double hitbox = new Rectangle2D.Double();
 
     long fireTime;
     double bulletVelocity, directAngle, distanceTraveled, bulletPower, playerDistance, maxEscapeAngle;
@@ -186,6 +186,10 @@ class EnemyWave implements Comparable<EnemyWave> {
     public ArrayList<BulletShadow> unmergedShadows = new ArrayList<BulletShadow>();
 
     public final void shadowBullet(Bullet b, Line line, long time, Graphics g) {
+
+        if (!b.isActive())
+            return;
+
         double minFactor = java.lang.Double.POSITIVE_INFINITY;
         double maxFactor = java.lang.Double.NEGATIVE_INFINITY;
 
