@@ -15,6 +15,7 @@ import robocode.util.Utils;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -312,6 +313,21 @@ public class GTSurferMove extends BaseMove {
 
         drawFactorIndex("BEST", debugFactorIndex, topx, topy, 8);
         drawFactorIndex("CUR", debugCurrentIndex, topx, topy, 0);
+
+        double last = 0, sum = 0;
+        for (int i = 0; i < _surfStats.length; i++)
+        {
+            double diff = _surfStats[i]-last;
+            sum += diff*diff;
+            last = _surfStats[i];
+        }
+        sum /= _surfStats.length;
+        sum = Math.sqrt(sum);
+
+        Graphics g = _robot.getGraphics();
+        g.setColor(Color.GREEN);
+        g.setFont(new Font("Verdana", Font.PLAIN, 11));
+        g.drawString("Roughness: " + new DecimalFormat("#.##").format(sum), topx, topy+120);
     }
 
     public void drawFactorIndex(String name, double factorIndex, int topx, int topy, int offset)
@@ -563,6 +579,14 @@ public class GTSurferMove extends BaseMove {
             BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
             surfWave.waveGuessFactors = basicNetwork.compute(inp).getData();
             _surfStats = surfWave.waveGuessFactors;
+
+            double[] wgf = new double[OUTPUT_LENGTH];
+
+            for (int x = OUTPUT_LENGTH-2; x >= 1; x--) {
+                wgf[x] = (surfWave.waveGuessFactors[x] + surfWave.waveGuessFactors[x-1] + surfWave.waveGuessFactors[x+1]) / 3.0;
+            }
+
+            //surfWave.waveGuessFactors = wgf;
         }
 
 

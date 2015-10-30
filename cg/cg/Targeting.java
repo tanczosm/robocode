@@ -138,7 +138,7 @@ public class Targeting {
 
                 //Bullet b;
 
-                if ((_robot.getEnergy() > 0 /*(RadarScanner.FIRE_POWER + 0.01)*/ || _radarScanner.nme.energy == 0) && (lastBullet = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
+                if ((_robot.getEnergy() > (RadarScanner.FIRE_POWER + 0.01) || _radarScanner.nme.energy == 0) && (lastBullet = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
                     _aiming = false;
                     _shotsFired++;
                     reportAccuracy();
@@ -207,7 +207,7 @@ public class Targeting {
         double _enemyShotAccuracy = (_enemyShotsTotal == 0 ? 0 : ((_radarScanner.nme.enemyShotHits / (_enemyShotsTotal)) * 100));
 
 
-        RadarScanner.FIRE_POWER = 1.72d; //1.72d; //2.4d; //1.95;
+        RadarScanner.FIRE_POWER = 1.92d; //1.72d; //2.4d; //1.95;
 
         if (_radarScanner.nme.distance < 70d)
             RadarScanner.FIRE_POWER = 3;

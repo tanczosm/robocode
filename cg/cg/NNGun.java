@@ -256,9 +256,11 @@ public class NNGun extends BaseGun {
 
                 if (wave.isReal) {
 
+                    double distTraveled = (_robot.getTime() - wave.fireTime) * wave.getBulletSpeed();
+                    double shotDistance = wave.fireLocation.distance(_radarScanner._myLocation);
 
-                    double dist = (_robot.getTime() - wave.fireTime) * wave.getBulletSpeed() - wave.fireLocation.distance(_radarScanner._myLocation);
-                    if (dist < closestDistance) {
+                    double dist = distTraveled - shotDistance;
+                    if (dist < closestDistance /*&& distTraveled < shotDistance*/) {
 
                         closestDistance = dist;
                         closest = p;
@@ -274,8 +276,6 @@ public class NNGun extends BaseGun {
                     */
                     //inputs[1] = lastInput;
 
-                    isDuplicate = false;
-                    break;
                 }
             }
 

@@ -273,6 +273,7 @@ public class CTSurferMove extends BaseMove {
         targetHitEvents++;
 
         for (int x = GF_ONE; x >= 0; x--) {
+
             w.waveGuessFactors[x] = ((w.waveGuessFactors[x] * rollingDepth)
                     + ((1 + w.weight) / (Math.pow(x - gfIndex, SCALING_FACTOR) + 1)))
                     / (rollingDepth + 1 + w.weight);
