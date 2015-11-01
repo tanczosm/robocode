@@ -323,6 +323,16 @@ public class CTSurferMove extends BaseMove {
         logAndRemoveWave(_radarScanner._myLocation);
     }
 
+    public void onBattleEnded()
+    {
+
+    }
+
+    public void onRoundEnded()
+    {
+
+    }
+
     public void logAndRemoveWave(Point2D.Double hitLocation) {
 
         if (!_enemyWaves.isEmpty()) {

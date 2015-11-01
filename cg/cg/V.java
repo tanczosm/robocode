@@ -103,6 +103,16 @@ public class V extends AdvancedRobot {
 
         if (_targeting != null)
             _targeting.onBattleEnded();
+
+        if (_movement != null)
+            _movement.onBattleEnded();
+    }
+
+    @Override
+    public void onRoundEnded(RoundEndedEvent event)
+    {
+        if (_movement != null)
+            _movement.onRoundEnded();
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {

@@ -36,6 +36,8 @@ public class GTSurferMove extends BaseMove {
     // Neural network stuff
     public BasicNetwork basicNetwork;
     public Backpropagation basicTrain;
+    public BasicNetwork randNetwork;
+    public Backpropagation randTrain;
     private ArrayList<MLDataPair> _theData;
     private ArrayList<MLDataPair> _lastHitsData;
 
@@ -44,6 +46,7 @@ public class GTSurferMove extends BaseMove {
 
     public static int BINS = OUTPUT_LENGTH;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
+    public static double _randStats[] = new double[BINS];
     public Point2D.Double _myLocation;     // our bot's location
     public Point2D.Double _enemyLocation;  // enemy bot's location
 
@@ -55,6 +58,8 @@ public class GTSurferMove extends BaseMove {
     public ArrayList _surfData;
     public ArrayList<Double> _LateralVelocityLast10;
     private final LinkedList<Bullet> bullets = new LinkedList<Bullet>();
+
+    private Random _rand;
 
     // TEMPORARY
     int debugFactorIndex = 0;
@@ -86,6 +91,8 @@ public class GTSurferMove extends BaseMove {
         _robot = robot;
         _radarScanner = radarScanner;
 
+        _rand = new Random();
+
         _enemyWaves = new ArrayList<EnemyWave>();
         _surfData = new ArrayList();
         _LateralVelocityLast10 = new ArrayList<Double>();
@@ -100,12 +107,23 @@ public class GTSurferMove extends BaseMove {
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
+        randNetwork = new BasicNetwork();
+        randNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        randNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+        randNetwork.getStructure().finalizeStructure();
+        randNetwork.reset();
+        randNetwork.reset(1000);
+
         _theData = new ArrayList<MLDataPair>();
         _lastHitsData = new ArrayList<MLDataPair>();
         _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
         MLDataSet trainingSet = new BasicMLDataSet(_theData);
         basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
         basicTrain.setBatchSize(1);
+
+        randTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        randTrain.setBatchSize(1);
 
     }
 
@@ -122,6 +140,18 @@ public class GTSurferMove extends BaseMove {
     public void onBulletMissed(BulletMissedEvent e)
     {
     }
+
+    public void onBattleEnded()
+    {
+        bullets.clear();
+    }
+
+    public void onRoundEnded()
+    {
+        bullets.clear();
+        _enemyWaves.clear();
+    }
+
 
     private void calculateShadow(final EnemyWave wave, final Bullet b) {
 
@@ -295,6 +325,19 @@ public class GTSurferMove extends BaseMove {
         updateWaves();
         doSurfing();
 
+        //System.out.print("Bullets: " + bullets.size());
+        for (int i = bullets.size()-1; i >= 0; i--)
+        {
+            Bullet b = bullets.get(i);
+
+            if (!b.isActive())
+            {
+                bullets.remove(i);
+            }
+
+        }
+
+
         //System.out.println("Gunheat: " + _lastGunHeat);
         if (_lastGunHeat < _robot.getGunHeat())
         {
@@ -314,7 +357,21 @@ public class GTSurferMove extends BaseMove {
         drawFactorIndex("BEST", debugFactorIndex, topx, topy, 8);
         drawFactorIndex("CUR", debugCurrentIndex, topx, topy, 0);
 
-        double last = 0, sum = 0;
+        double[] stats2 = new double[_randStats.length];
+        double last = _randStats[0];
+        stats2[0] = last;
+        for (int i = 1; i < _randStats.length; i++)
+        {
+            stats2[i] = (_randStats[i]+_randStats[i-1])/2;
+        }
+
+        drawFactor(stats2, 0, _randStats.length, "Firing Rand Output", topx, topy+150, 0);
+
+        drawFactorIndex("BEST", debugFactorIndex, topx, topy+140, 8);
+        drawFactorIndex("CUR", debugCurrentIndex, topx, topy+140, 0);
+
+        double sum = 0;
+        last = 0;
         for (int i = 0; i < _surfStats.length; i++)
         {
             double diff = _surfStats[i]-last;
@@ -323,6 +380,7 @@ public class GTSurferMove extends BaseMove {
         }
         sum /= _surfStats.length;
         sum = Math.sqrt(sum);
+
 
         Graphics g = _robot.getGraphics();
         g.setColor(Color.GREEN);
@@ -354,7 +412,7 @@ public class GTSurferMove extends BaseMove {
         double graphWidth = 150;
         int height = 45;
 
-        topy = (height + 5) * position;
+        topy = topy + (height + 5) * position;
         int graphx = topx, graphy = topy + height - 10, cnt = 0;
         int rightBorder = graphx + ((int) graphWidth - (int) (graphWidth / featureCount));
         g.setColor(Color.GREEN);
@@ -580,6 +638,16 @@ public class GTSurferMove extends BaseMove {
             surfWave.waveGuessFactors = basicNetwork.compute(inp).getData();
             _surfStats = surfWave.waveGuessFactors;
 
+            double[] randGF = randNetwork.compute(inp).getData();
+            surfWave.waveGuessFactorsRand = randGF;
+            _randStats = surfWave.waveGuessFactorsRand;
+
+            if (_robot.getRoundNum() > 17)
+                for (int i = 0; i < randGF.length; i++)
+                {
+                    //surfWave.waveGuessFactors[i] = surfWave.waveGuessFactors[i]*0.75 + randGF[i]*0.25;
+                }
+
             double[] wgf = new double[OUTPUT_LENGTH];
 
             for (int x = OUTPUT_LENGTH-2; x >= 1; x--) {
@@ -641,23 +709,67 @@ public class GTSurferMove extends BaseMove {
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
         double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*5, centers);
 
+        /*
+        if (isHit)
+        {
+            _theData.clear();
+
+            for (int i = 0; i < ew.waveGuessFactors.length; i++)
+            {
+                int index = getFactorIndex(gf);
+                if (Math.abs(i-index) <= gfwidth)
+                    ew.waveGuessFactors[i] = Math.max(0, ew.waveGuessFactors[i]*1.1);
+//                else
+//                    ew.waveGuessFactors[i] = Math.min(1.0, ew.waveGuessFactors[i]*0.1);
+            }
+
+            _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ew.waveGuessFactors)));
+            basicTrain.iteration(1);
+
+            return;
+        }
+        */
         _theData.clear();
         _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
+        _lastHitsData.add(_theData.get(_theData.size() - 1));
 
+        /*
         for (int i = 0; i < _lastHitsData.size(); i++)
         {
             _theData.add(_lastHitsData.get(i));
         }
+        */
 
         basicTrain.iteration(2);
 
-        if (isHit && 2==3)
-        {
-            _lastHitsData.add(_theData.get(_theData.size()-1));
 
-            if (_lastHitsData.size() > 5)
-                _lastHitsData.remove(0);
+        _theData.clear();
+        if (_lastHitsData.size() > 200) {
+            int randIndex = (int) (_rand.nextDouble() * 199);
+
+            _lastHitsData.remove(randIndex);
         }
+
+        int fillCount = 5;
+
+        _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
+        fillCount--;
+
+
+        if (_lastHitsData.size() > 5) {
+            for (int j = 0; j < fillCount; j++) {
+                int randIndex = (int) (_rand.nextDouble() * _lastHitsData.size());
+
+                _theData.add(_lastHitsData.get(randIndex));
+            }
+        }
+
+        if (_theData.size() > 0)
+            randTrain.iteration(2);
+
+
+
+
 
     }
 
@@ -805,6 +917,14 @@ public class GTSurferMove extends BaseMove {
                     surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
                 //   + surfWave.bulletVelocity
                     ) {
+/*
+                double[][] corners = surfWave.getCorners(new Rectangle2D.Double(next.location.x-18, next.location.y-18, 36, 36));
+                double wd1 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - best.firstWave.distanceTraveled;
+                double wd2 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - best.firstWave.distanceTraveled;
+                double wd3 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - best.firstWave.distanceTraveled;
+                double wd4 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - best.firstWave.distanceTraveled;
+                */
+
                 intercepted = true;
             }
         } while(!intercepted && counter < 500);
@@ -955,7 +1075,7 @@ public class GTSurferMove extends BaseMove {
             {
                 //hasShadows = true;
                 shadows[k] = 0.0;
-                surfWave.waveGuessFactors[k] = 0;
+                //surfWave.waveGuessFactors[k] = 0;
             }
         }
 

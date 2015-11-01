@@ -236,10 +236,9 @@ public class Targeting {
             RadarScanner.FIRE_POWER = 0.1d; // Use dodging capability to collect firing data.. we should live longer and get smarter
         */
 
-        /*
-        if (CrushTurtle.gunTestMode)
+        if (V.mode == V.Modes.TARGET_ONLY)
             RadarScanner.FIRE_POWER = 3;
-        */
+
 
         RadarScanner.FIRE_SPEED = 20 - RadarScanner.FIRE_POWER * 3;
 

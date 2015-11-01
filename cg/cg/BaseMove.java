@@ -18,5 +18,7 @@ public abstract class BaseMove {
     abstract String getName();
     abstract void onBulletHit(BulletHitEvent e);
     abstract public void onBulletMissed(BulletMissedEvent e);
+    abstract public void onBattleEnded();
+    abstract public void onRoundEnded();
 
 }

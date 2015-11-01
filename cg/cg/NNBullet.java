@@ -77,7 +77,7 @@ public class NNBullet {
             */
             double gf = getGuessFactor(enemyX, enemyY);
             //System.out.println("Correct gf is " + gf);
-            double[] centers = RBFUtils.getCenters(-1.0, 1.0, 61);
+            double[] centers = RBFUtils.getCenters(-1.0, 1.0, NNGun.OUTPUT_LENGTH);
 
             // Calculate the effective bot width at distance as that will be needed to regulate
             // the width of the features

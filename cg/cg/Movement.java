@@ -82,4 +82,14 @@ public class Movement {
     {
         selectedMover.onBulletMissed(e);
     }
+
+    public void onBattleEnded()
+    {
+        selectedMover.onBattleEnded();
+    }
+
+    public void onRoundEnded()
+    {
+        selectedMover.onRoundEnded();
+    }
 }

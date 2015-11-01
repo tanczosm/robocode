@@ -39,10 +39,10 @@ public class NNGun extends BaseGun {
     public Backpropagation randomTrain;
 
     public static final int INPUT_LENGTH = 70;
-    public static final int OUTPUT_LENGTH = 61;
+    public static final int OUTPUT_LENGTH = 131;
 
-    public static final int GF_ZERO = 30; // 23; //15;
-    public static final int GF_ONE = 60; //46; //30;
+    public static final int GF_ZERO = (OUTPUT_LENGTH-1) / 2; // 23; //15;
+    public static final int GF_ONE = OUTPUT_LENGTH - 1; //46; //30;
 
     private List<NNBullet> waves = new ArrayList<NNBullet>();
     private NNBullet newWave = null;
@@ -119,7 +119,7 @@ public class NNGun extends BaseGun {
 //         MLDataSet trainingSet = new BasicMLDataSet(new double[1][INPUT_LENGTH], new double[1][OUTPUT_LENGTH]);
 
         // create two trainers
-        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3); //0.1, 0.9); // 0.7, 0.3
         randomTrain = new Backpropagation(basicNetwork, randomTrainingSet, 0.7, 0.3);
 
         basicTrain.setBatchSize(1);
@@ -425,6 +425,12 @@ public class NNGun extends BaseGun {
                 _theData.clear();
                 _theData.add(new BasicMLDataPair(new BasicMLData(currentWave.inputs), new BasicMLData(currentWave.outputs)));
 
+                /*
+                if (currentWave.isReal)
+                    basicTrain.setLearningRate(0.7);
+                else
+                    basicTrain.setLearningRate(0.7);*/
+
                 if (_theData.size() > 0)
                     basicTrain.iteration(1);
 
@@ -468,6 +474,8 @@ public class NNGun extends BaseGun {
                 }*/
 
                 _theData.clear();
+
+                //basicTrain.setLearningRate(0.7);
 
                 double errSum = 0;
                 int count = 0, errCount = 0;
@@ -656,6 +664,24 @@ public class NNGun extends BaseGun {
 
     }
 
+    public double getShotRating(double[] outgf, double[] randgf, int gfindex, int totalSpan)
+    {
+        int index = gfindex;
+        int halfSpan = (int)Math.max(1.0, Math.ceil(totalSpan/2.0));
+        int startIndex = (int)CTUtils.clamp(index-halfSpan, 0, index);
+        int endIndex = (int)CTUtils.clamp(index+halfSpan, index, OUTPUT_LENGTH-1);
+
+        double sum = 0;
+        int count = 0;
+        for (int i = startIndex; i <= endIndex; i++)
+        {
+            sum += outgf[i] + randgf[i];
+            count++;
+        }
+
+        return count == 0 ? 0 : sum/count;
+    }
+
     public double projectBearing(Situation s, double x, double y, double enemyHeading) {
 
         if (s == null)
@@ -713,21 +739,34 @@ public class NNGun extends BaseGun {
         double[] randoutgf = randomNetwork.compute(inp).getData();
         //System.out.println("Guessfactor Output: " + Arrays.toString(outgf));
 
+        double botWidthAimAngle = CTUtils.botWidthAimAngle(_radarScanner.nme.distance);
+        double gfSpan = 2.0 / (double)OUTPUT_LENGTH; // -1.0 to 1.0 is a 2.0 span over OUTPUT_LENGTH factors
+        int totalSpan = (int)Math.max(Math.ceil(botWidthAimAngle / gfSpan), 1.0);
+
         if (randoutgf.length != outgf.length)
         {
             randoutgf = new double[outgf.length];
         }
 
-        int maxgf = 31;
+        double bestRating = -1;
+        int maxgf = GF_ZERO+1;
         for (int i = lowGF; i <= highGF && i < outgf.length; i++) {
             //outgf[i] = 1.0 - outgf[i];
 
             if (i < 0 || i > outgf.length-1)
                 continue;
 
+
             if (outgf[i] + randoutgf[i] > outgf[maxgf] + randoutgf[maxgf]) {
                 maxgf = i;
             }
+            /*
+            double rating = getShotRating(outgf, randoutgf, i, totalSpan);
+            if (rating > bestRating)
+            {
+                bestRating = rating;
+                maxgf = i;
+            }*/
         }
 
 
