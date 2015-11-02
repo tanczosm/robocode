@@ -88,6 +88,11 @@ public class Movement {
         selectedMover.onBattleEnded();
     }
 
+    public void onRoundStarted()
+    {
+        selectedMover.onRoundStarted();
+    }
+
     public void onRoundEnded()
     {
         selectedMover.onRoundEnded();

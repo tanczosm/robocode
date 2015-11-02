@@ -1,6 +1,7 @@
 package cg;
 
 import robocode.*;
+import robocode.control.events.RoundStartedEvent;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
@@ -115,7 +116,15 @@ public class V extends AdvancedRobot {
             _movement.onRoundEnded();
     }
 
+    public void onRoundStarted()
+    {
+        if (_movement != null)
+            _movement.onRoundStarted();
+
+    }
+
     public void onScannedRobot(ScannedRobotEvent e) {
+        System.out.println("player gunheat: " + getGunHeat());
 
 
         if (_radarScanner._lastScan == null) {
