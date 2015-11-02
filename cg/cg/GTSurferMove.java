@@ -119,7 +119,7 @@ public class GTSurferMove extends BaseMove {
         _lastHitsData = new ArrayList<MLDataPair>();
         _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
         MLDataSet trainingSet = new BasicMLDataSet(_theData);
-        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.1, 0.9);
         basicTrain.setBatchSize(1);
 
         randTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
@@ -150,7 +150,7 @@ public class GTSurferMove extends BaseMove {
     public void onRoundStarted()
     {
         _radarScanner._enemyGunHeat = 3.0;
-        _radarScanner._enemyGunHeat -= _robot.getGunCoolingRate();
+        //_radarScanner._enemyGunHeat -= _robot.getGunCoolingRate();
     }
 
     public void onRoundEnded()
@@ -202,13 +202,13 @@ public class GTSurferMove extends BaseMove {
 
     private void calculateShadowsForBullet(final Bullet b) {
         for(final EnemyWave wave : _enemyWaves) {
-            //if(!wave.isReal) continue;
+            if(wave.imaginary) continue;
             calculateShadow(wave, b);
         }
     }
 
     private void calculateShadowsForWave(final EnemyWave wave) {
-        //if(wave.imaginary) return;
+        if(wave.imaginary) return;
         final Iterator<Bullet> it = bullets.iterator();
         while(it.hasNext()) {
             final Bullet b = it.next();
@@ -299,7 +299,14 @@ public class GTSurferMove extends BaseMove {
         g.setFont(new Font("Verdana", Font.PLAIN, 11));
         g.drawString("Enemy Gunheat: " + new DecimalFormat("#.##").format(_radarScanner._enemyGunHeat), 5, 550);
 
+        int fireWaveState = 0;  // 0 = don't fire, 1 = fire imaginary, 2 = fire real wave
+
+        surfData _surf = null;
         if (bulletPower < 3.01 && bulletPower > 0.09 && _surfData.size() > 2) {
+
+            _surf = (surfData)_surfData.get(2);  // Get the data for what happened 2 ticks ago
+
+            fireWaveState = 2;  // This is an actual bullet, so fire it
 
             _radarScanner._enemyBulletPowers.add(bulletPower);
             if (_radarScanner._enemyBulletPowers.size() > 5)
@@ -307,20 +314,42 @@ public class GTSurferMove extends BaseMove {
 
             _radarScanner._enemyGunHeat = 1 + (bulletPower / 5.0);
 
-
         }
 
-        surfData _surf = sd;
-        if (_radarScanner._enemyGunHeat < _robot.getGunCoolingRate()*2 && _radarScanner._enemyGunHeat > _robot.getGunCoolingRate())
-        {
+        if (_radarScanner._enemyGunHeat < _robot.getGunCoolingRate()*2) {
+
+            _surf = sd;  // Get the most recent data
+
+            //fireWaveState = 1;
+
             double power = 0;
-            for(final Double d : _radarScanner._enemyBulletPowers)
+            for (final Double d : _radarScanner._enemyBulletPowers)
                 power += d;
             power /= _radarScanner._enemyBulletPowers.size();
             bulletPower = Math.min(_radarScanner._oppEnergy, power);
 
+            // Temporarily simulate what the gunheat should be + 2 ticks of extra gunheat
+            _radarScanner._enemyGunHeat = 1 + (bulletPower / 5.0) + 2 * _robot.getGunCoolingRate();
+
+        }
+
+        if (fireWaveState > 0)
+        {
+            if (fireWaveState == 2)
+            {
+                for (int i = _enemyWaves.size()-1; i >= 0; i--)
+                {
+                    if (_enemyWaves.get(i).imaginary)
+                    {
+                        _enemyWaves.remove(i);
+                        continue;
+                    }
+                }
+            }
+
             EnemyWave ew = new EnemyWave();
-            ew.fireTime = _robot.getTime() + 1;
+            ew.fireTime =  fireWaveState == 2 ? _robot.getTime() - 1 : _robot.getTime();
+            ew.imaginary = fireWaveState == 2 ? false : true;
             ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
             ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
             ew.direction = _surf.direction;
@@ -1267,7 +1296,7 @@ public class GTSurferMove extends BaseMove {
         BestWaves best = getClosestSurfableWave();
         EnemyWave surfWave = best.firstWave;
         double distance = _enemyLocation.distance(_myLocation);
-        if (surfWave == null || distance < 50) {
+        if (surfWave == null || distance < 50 || _radarScanner.nme.energy <= 0.1) {
             //do 'away' movement  best distance of 400 - modified from RaikoNano
             double absBearing = CTUtils.absoluteBearing(_myLocation, _enemyLocation);
             double headingRadians = _robot.getHeadingRadians();
