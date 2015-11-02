@@ -23,7 +23,6 @@ class EnemyWave implements Comparable<EnemyWave> {
     int direction, weight;
 
     boolean collidedWithBullet = false;
-    boolean imaginary = false;  // True if this wave corresponds to an actual bullet
 
     // Temp data only for sorting - DO NOT USE
     public double currentDistanceToPlayer;
