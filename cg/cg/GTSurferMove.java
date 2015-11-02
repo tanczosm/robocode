@@ -146,19 +146,11 @@ public class GTSurferMove extends BaseMove {
         bullets.clear();
     }
 
-
-    public void onRoundStarted()
-    {
-        _radarScanner._enemyGunHeat = 3.0;
-        _radarScanner._enemyGunHeat -= _robot.getGunCoolingRate();
-    }
-
     public void onRoundEnded()
     {
         bullets.clear();
         _enemyWaves.clear();
     }
-
 
 
     private void calculateShadow(final EnemyWave wave, final Bullet b) {
@@ -289,38 +281,14 @@ public class GTSurferMove extends BaseMove {
 
 // Need location, lateral velocity, heading, lateral direction, advancing velocity and angle from enemy
 
-
-
         double bulletPower = _radarScanner._oppEnergy - e.getEnergy();
+        if (bulletPower < 3.01 && bulletPower > 0.09
+                && _surfData.size() > 2) {
 
-
-        Graphics g = _robot.getGraphics();
-        g.setColor(Color.GREEN);
-        g.setFont(new Font("Verdana", Font.PLAIN, 11));
-        g.drawString("Enemy Gunheat: " + new DecimalFormat("#.##").format(_radarScanner._enemyGunHeat), 5, 550);
-
-        if (bulletPower < 3.01 && bulletPower > 0.09 && _surfData.size() > 2) {
-
-            _radarScanner._enemyBulletPowers.add(bulletPower);
-            if (_radarScanner._enemyBulletPowers.size() > 5)
-                _radarScanner._enemyBulletPowers.remove(0);
-
-            _radarScanner._enemyGunHeat = 1 + (bulletPower / 5.0);
-
-
-        }
-
-        surfData _surf = sd;
-        if (_radarScanner._enemyGunHeat < _robot.getGunCoolingRate()*2 && _radarScanner._enemyGunHeat > _robot.getGunCoolingRate())
-        {
-            double power = 0;
-            for(final Double d : _radarScanner._enemyBulletPowers)
-                power += d;
-            power /= _radarScanner._enemyBulletPowers.size();
-            bulletPower = Math.min(_radarScanner._oppEnergy, power);
+            surfData _surf = ((surfData)_surfData.get(2));
 
             EnemyWave ew = new EnemyWave();
-            ew.fireTime = _robot.getTime() + 1;
+            ew.fireTime = _robot.getTime() - 1;
             ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
             ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
             ew.direction = _surf.direction;
@@ -344,9 +312,6 @@ public class GTSurferMove extends BaseMove {
         _lastVelocity = velocity;
         _lastDirection = direction;
 
-        _radarScanner._enemyGunHeat += -_robot.getGunCoolingRate();
-        _radarScanner._enemyGunHeat = Math.max(0, _radarScanner._enemyGunHeat);
-
         _radarScanner._oppEnergy = e.getEnergy();
 
         // update after EnemyWave detection, because that needs the previous
@@ -356,8 +321,6 @@ public class GTSurferMove extends BaseMove {
     }
 
     public void update(ScannedRobotEvent e) {
-
-        System.out.println("gunheat: " + _robot.getGunHeat());
 
         updateWaves();
         doSurfing();
@@ -954,7 +917,13 @@ public class GTSurferMove extends BaseMove {
                     surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
                 //   + surfWave.bulletVelocity
                     ) {
-
+/*
+                double[][] corners = surfWave.getCorners(new Rectangle2D.Double(next.location.x-18, next.location.y-18, 36, 36));
+                double wd1 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - best.firstWave.distanceTraveled;
+                double wd2 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - best.firstWave.distanceTraveled;
+                double wd3 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - best.firstWave.distanceTraveled;
+                double wd4 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - best.firstWave.distanceTraveled;
+                */
 
                 intercepted = true;
             }
@@ -1022,23 +991,11 @@ public class GTSurferMove extends BaseMove {
 
             counter++;
 
-            double distTraveled = (counter * surfWave.bulletVelocity);  // How far has our simulated bullet traveled?
-
-            if (surfWave.predictedPosition.distance(surfWave.fireLocation) - 52 <
-                    surfWave.distanceTraveled + distTraveled
-                   //+ surfWave.bulletVelocity
+            if (surfWave.predictedPosition.distance(surfWave.fireLocation) - 20 <
+                    surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
+                //   + surfWave.bulletVelocity
                     ) {
-
-                double[][] corners = surfWave.getCorners(new Rectangle2D.Double(surfWave.predictedPosition.x-18, surfWave.predictedPosition.y-18, 36, 36));
-                double wd1 = surfWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - surfWave.distanceTraveled - distTraveled;
-                double wd2 = surfWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - surfWave.distanceTraveled - distTraveled;
-                double wd3 = surfWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - surfWave.distanceTraveled - distTraveled;
-                double wd4 = surfWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - surfWave.distanceTraveled - distTraveled;
-
-                double mindist = Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4));
-
-                if (mindist <= surfWave.bulletVelocity)
-                    intercepted = true;
+                intercepted = true;
             }
         } while(!intercepted && counter < 500);
 

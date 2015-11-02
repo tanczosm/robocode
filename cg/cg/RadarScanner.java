@@ -25,8 +25,6 @@ public class RadarScanner {
     private ArrayList<Situation> _nodeQueue;
     private ArrayList<EnemySituation> _enemyNodeQueue;
 
-
-
     private ArrayList<BaseGun> _registeredGuns;
     //    public static Rectangle2D.Double _fieldRect = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
     public final static int wallwidth = 18; // 18
@@ -54,8 +52,6 @@ public class RadarScanner {
     public double _lastLatVel = 0;
     public double _lastDirection = 1;
     public int _DirectionChangeTime = 0;
-    public static double _enemyGunHeat = 0;
-    public static ArrayList<Double> _enemyBulletPowers = new ArrayList<Double>();
 
     public ArrayList<Double> _LateralVelocityLast10;
 

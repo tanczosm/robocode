@@ -333,12 +333,6 @@ public class CTSurferMove extends BaseMove {
 
     }
 
-
-    public void onRoundStarted()
-    {
-
-    }
-
     public void logAndRemoveWave(Point2D.Double hitLocation) {
 
         if (!_enemyWaves.isEmpty()) {
