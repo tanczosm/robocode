@@ -119,10 +119,10 @@ public class GTSurferMove extends BaseMove {
         _lastHitsData = new ArrayList<MLDataPair>();
         _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
         MLDataSet trainingSet = new BasicMLDataSet(_theData);
-        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.3, 0.7);
         basicTrain.setBatchSize(1);
 
-        randTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
+        randTrain = new Backpropagation(basicNetwork, trainingSet, 0.1, 0.9);
         randTrain.setBatchSize(1);
 
     }
@@ -330,7 +330,7 @@ public class GTSurferMove extends BaseMove {
         {
             Bullet b = bullets.get(i);
 
-            if (!b.isActive())
+            if (b != null && !b.isActive())
             {
                 bullets.remove(i);
             }
@@ -543,7 +543,7 @@ public class GTSurferMove extends BaseMove {
             g.setColor(java.awt.Color.green);
             int cTime = (int) _robot.getTime();
 
-            if (ew.waveGuessFactors != null && i == 0) {
+            if (ew.waveGuessFactors != null) {
                 for (int p = 0; p < ew.waveGuessFactors.length; p++) {
                     double angleOffset = angleDivision * (double) p * 0;
 
@@ -639,21 +639,47 @@ public class GTSurferMove extends BaseMove {
             _surfStats = surfWave.waveGuessFactors;
 
             double[] randGF = randNetwork.compute(inp).getData();
-            surfWave.waveGuessFactorsRand = randGF;
-            _randStats = surfWave.waveGuessFactorsRand;
+            double[] stats2 = new double[_randStats.length];
+            double last = randGF[0];
+            stats2[0] = last;
+            for (int i = 1; i < randGF.length-1; i++)
+            {
+                stats2[i] = (randGF[i]+randGF[i-1]+randGF[i+1])/3;
+            }
 
-            if (_robot.getRoundNum() > 17)
+            surfWave.waveGuessFactorsRand = stats2;
+            _randStats = surfWave.waveGuessFactorsRand;
+/*
+            double sum = 0;
+            last = 0;
+            for (int i = 0; i < _surfStats.length; i++)
+            {
+                double diff = _surfStats[i]-last;
+                sum += diff*diff;
+                last = _surfStats[i];
+            }
+            sum /= _surfStats.length;
+            sum = Math.sqrt(sum);
+
+            sum = CTUtils.clamp(sum, 0.1, 1.0);
+
+            if (sum < 0.3)
                 for (int i = 0; i < randGF.length; i++)
                 {
-                    //surfWave.waveGuessFactors[i] = surfWave.waveGuessFactors[i]*0.75 + randGF[i]*0.25;
-                }
+                    //double percent = sum/0.5;
+                   //surfWave.waveGuessFactors[i] = surfWave.waveGuessFactors[i]*(0.50) + randGF[i]*0.25;
+                    surfWave.waveGuessFactors[i] = (surfWave.waveGuessFactors[i]+ randGF[i])/2.0;
 
+                }
+            */
+
+            /*
             double[] wgf = new double[OUTPUT_LENGTH];
 
             for (int x = OUTPUT_LENGTH-2; x >= 1; x--) {
                 wgf[x] = (surfWave.waveGuessFactors[x] + surfWave.waveGuessFactors[x-1] + surfWave.waveGuessFactors[x+1]) / 3.0;
             }
-
+            */
             //surfWave.waveGuessFactors = wgf;
         }
 
@@ -744,8 +770,8 @@ public class GTSurferMove extends BaseMove {
 
 
         _theData.clear();
-        if (_lastHitsData.size() > 200) {
-            int randIndex = (int) (_rand.nextDouble() * 199);
+        if (_lastHitsData.size() > 20) {
+            int randIndex = (int) (_rand.nextDouble() * 19);
 
             _lastHitsData.remove(randIndex);
         }
@@ -765,7 +791,7 @@ public class GTSurferMove extends BaseMove {
         }
 
         if (_theData.size() > 0)
-            randTrain.iteration(2);
+            randTrain.iteration(1);
 
 
 
@@ -991,11 +1017,22 @@ public class GTSurferMove extends BaseMove {
 
             counter++;
 
-            if (surfWave.predictedPosition.distance(surfWave.fireLocation) - 20 <
+            double distTraveled = (counter * surfWave.bulletVelocity);  // How far has our simulated bullet traveled?
+            if (surfWave.predictedPosition.distance(surfWave.fireLocation) - 25 <
                     surfWave.distanceTraveled + (counter * surfWave.bulletVelocity)
                 //   + surfWave.bulletVelocity
                     ) {
-                intercepted = true;
+                //intercepted = true;
+                double[][] corners = surfWave.getCorners(new Rectangle2D.Double(surfWave.predictedPosition.x-18, surfWave.predictedPosition.y-18, 36, 36));
+                double wd1 = surfWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - surfWave.distanceTraveled - distTraveled;
+                double wd2 = surfWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - surfWave.distanceTraveled - distTraveled;
+                double wd3 = surfWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - surfWave.distanceTraveled - distTraveled;
+                double wd4 = surfWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - surfWave.distanceTraveled - distTraveled;
+
+                double mindist = Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4));
+
+                if (mindist <= surfWave.bulletVelocity)
+                    intercepted = true;
             }
         } while(!intercepted && counter < 500);
 
@@ -1085,7 +1122,7 @@ public class GTSurferMove extends BaseMove {
         double danger = 0.0;
         for (int i = startIndex; i <= endIndex; i++)
         {
-            danger += surfWave.waveGuessFactors[i] * shadows[i];
+            danger += surfWave.waveGuessFactors[i] * (shadows[i]/2);
 
         }
         danger /= totalSpan;
@@ -1266,8 +1303,9 @@ public class GTSurferMove extends BaseMove {
             double wd3 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - best.firstWave.distanceTraveled;
             double wd4 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - best.firstWave.distanceTraveled;
 
-//            int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
-            int bulletTicks = CTUtils.bulletTicks(Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4)), best.firstWave.bulletPower);
+            int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
+            //int bulletTicks = CTUtils.bulletTicks(Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4)), best.firstWave.bulletPower);
+            //bulletTicks = (int)Math.max(0, bulletTicks-1);
             int tripTicks = best.firstWave.safePoints.size();
 
             System.out.println("Original bullet ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) +
@@ -1303,7 +1341,7 @@ public class GTSurferMove extends BaseMove {
 
                 // So now we have to traverse totalDist pixels traveling up to 8 pixels a tick
                 int tickDiff = bulletTicks - tripTicks;
-                double extraPixels = (tickDiff) * 8.0; // This isn't right because of accel/decel
+                double extraPixels = (tickDiff) * 8; // This isn't right because of accel/decel
                 double desiredDistance = totalDist + extraPixels;
 
                 ArrayList<Point2D.Double> safePoints = new ArrayList<Point2D.Double>();
@@ -1376,6 +1414,7 @@ public class GTSurferMove extends BaseMove {
                     // We need to slow down..
                 if (!surfWave.redirected)
                 {
+                    System.out.println("Slowing down.. extraPixels: " + extraPixels + ", tripTicks: " + tripTicks);
                     double reducePerTick = extraPixels / tripTicks;
                     _robot.setMaxVelocity(8.0 - reducePerTick);
                 }
