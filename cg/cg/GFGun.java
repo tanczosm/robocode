@@ -408,6 +408,11 @@ else
 
     }
 
+    public void onRoundEnded()
+    {
+
+    }
+
     public double projectBearing(Situation s, double x, double y, double enemyHeading) {
         if (s == null)
             return 0;

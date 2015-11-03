@@ -101,7 +101,7 @@ public class GTSurferMove extends BaseMove {
 
         basicNetwork = new BasicNetwork();
         basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
-        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, OUTPUT_LENGTH/2));
         basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
         basicNetwork.getStructure().finalizeStructure();
         basicNetwork.reset();
@@ -698,7 +698,7 @@ public class GTSurferMove extends BaseMove {
         double offsetAngle = (CTUtils.absoluteBearing(ew.fireLocation, targetLocation)
                 - ew.directAngle);
         double factor = Utils.normalRelativeAngle(offsetAngle)
-                / CTUtils.maxEscapeAngle(ew.bulletVelocity) * ew.direction;
+                        / CTUtils.maxEscapeAngle(ew.bulletVelocity) * ew.direction;
 
         return factor;
     }
@@ -720,7 +720,7 @@ public class GTSurferMove extends BaseMove {
     }
 
     // Given the EnemyWave that the bullet was on, and the point where we
-// were hit, update our stat array to reflect the danger in that area.
+    // were hit, update our stat array to reflect the danger in that area.
     public void logHit(EnemyWave ew, Point2D.Double targetLocation, boolean isHit) {
 
         if (!isHit)
@@ -1303,8 +1303,8 @@ public class GTSurferMove extends BaseMove {
             double wd3 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[2][0], corners[2][1])) - best.firstWave.distanceTraveled;
             double wd4 = best.firstWave.fireLocation.distance(new Point2D.Double(corners[3][0], corners[3][1])) - best.firstWave.distanceTraveled;
 
-            int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
-            //int bulletTicks = CTUtils.bulletTicks(Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4)), best.firstWave.bulletPower);
+            //int bulletTicks = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);
+            int bulletTicks = CTUtils.bulletTicks(Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4)), best.firstWave.bulletPower);
             //bulletTicks = (int)Math.max(0, bulletTicks-1);
             int tripTicks = best.firstWave.safePoints.size();
 
@@ -1392,6 +1392,7 @@ public class GTSurferMove extends BaseMove {
                 double d2 = endp2.distance(_radarScanner.nme.location);
                 double cornerDist = CTUtils.cornerDistance(_myLocation, 800,600);
 
+                /*
                 if (best.firstWave.redirected == false && safePoints.size() > 0
                         && _safeZone.contains(endp2)
                         && cornerDist > 100
@@ -1401,15 +1402,10 @@ public class GTSurferMove extends BaseMove {
                     best.firstWave.safePoints = safePoints;
                     p1 = getBestPoint(best.firstWave, (Point2D.Double)_myLocation.clone(), _robot.getVelocity(), _robot.getHeadingRadians());
 
-                    /*
-                    bulletTicks = CTUtils.bulletTicks(best.firstWave.distanceTraveled - best.firstWave.fireLocation.distance(endp2), best.firstWave.bulletPower);
-                    tripTicks = best.firstWave.safePoints.size();
-                    tickDiff = bulletTicks - tripTicks;
-                    extraPixels = tickDiff * 8.0;
-                    */
                     best.firstWave.redirected = true;
                     System.out.println("8888888888888888888888888888888888888888888888888888888888");
                 }
+                */
 
                     // We need to slow down..
                 if (!surfWave.redirected)

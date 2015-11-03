@@ -19,6 +19,11 @@ public class HotGun extends BaseGun {
         return "HOT";
     }
 
+    public void onRoundEnded()
+    {
+
+    }
+
     public void update() {
 
     }

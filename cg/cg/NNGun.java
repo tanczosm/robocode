@@ -132,6 +132,11 @@ public class NNGun extends BaseGun {
         return "NN";
     }
 
+    public void onRoundEnded()
+    {
+        waves.clear();
+    }
+
     public RobotState[] calculateEnemyMoves(boolean clockwise)  // May want to make the absBearing to be perp to player always
     {
         double maxVelocity = 8;
@@ -574,10 +579,10 @@ public class NNGun extends BaseGun {
 
         // Advancing Velocity - Range -8.0 - 8.0, split into 9 features
         double advancingVelocity = Math.min(1.0d, Math.max(-1.0d, s.AdvancingVelocity * 1.0d)); // +/- 8.0
-        double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 0.1, RBFUtils.getCenters(-1.0d, +1.0d, 9));
+        double[] fadvancevel = RBFUtils.processDataIntoFeatures(advancingVelocity, 0.05, RBFUtils.getCenters(-1.0d, +1.0d, 9));
 
         // Need distance delta
-        double[] fdistlast10 = RBFUtils.processDataIntoFeatures(s.DistanceLast10, 80, RBFUtils.getCenters(0, 80, 6));
+        double[] fdistlast10 = RBFUtils.processDataIntoFeatures(s.DistanceLast10, 20, RBFUtils.getCenters(0, 80, 6));
 
 
         // SinceVelocityChange - Range 0 - 1, split into 7 features

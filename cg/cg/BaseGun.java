@@ -37,6 +37,8 @@ public abstract class BaseGun {
     public void onBattleEnded() {
     }
 
+    abstract public void onRoundEnded();
+
     public double getRatingPercent() {
         return _averager.getAverage();
     }

@@ -67,6 +67,14 @@ public class Targeting {
         }
     }
 
+    public void onRoundEnded()
+    {
+        for (BaseGun gun : guns) {
+            gun.onRoundEnded();
+        }
+
+    }
+
     public void selectGun() {
 
         if (_radarScanner.nme.energy < 0.1) {
@@ -122,7 +130,7 @@ public class Targeting {
 
         selectGun();
 
-        if (RadarScanner.FIRE_POWER > 0 && _robot.getGunHeat() / _coolingRate < 2d) {
+        if (RadarScanner.FIRE_POWER > 0/* && _robot.getGunHeat() / _coolingRate < 2d*/) {
 
             // Rotate gun according to bearing
             if (bearing < Double.MAX_VALUE && _robot.getGunHeat() <= 2*_coolingRate/* && distance > 70d*/) {
