@@ -748,7 +748,7 @@ public class GTSurferMove extends BaseMove {
         double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*5, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*3, centers);
 
         /*
         if (isHit)
@@ -1056,6 +1056,7 @@ public class GTSurferMove extends BaseMove {
                 //   + surfWave.bulletVelocity
                     ) {
                 //intercepted = true;
+                /*
                 double[][] corners = surfWave.getCorners(new Rectangle2D.Double(surfWave.predictedPosition.x-18, surfWave.predictedPosition.y-18, 36, 36));
                 double wd1 = surfWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - surfWave.distanceTraveled - distTraveled;
                 double wd2 = surfWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - surfWave.distanceTraveled - distTraveled;
@@ -1065,6 +1066,7 @@ public class GTSurferMove extends BaseMove {
                 double mindist = Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4));
 
                 if (mindist <= surfWave.bulletVelocity)
+                */
                     intercepted = true;
             }
         } while(!intercepted && counter < 500);
@@ -1425,7 +1427,7 @@ public class GTSurferMove extends BaseMove {
                 double d2 = endp2.distance(_radarScanner.nme.location);
                 double cornerDist = CTUtils.cornerDistance(_myLocation, 800,600);
 
-                /*
+
                 if (best.firstWave.redirected == false && safePoints.size() > 0
                         && _safeZone.contains(endp2)
                         && cornerDist > 100
@@ -1438,7 +1440,7 @@ public class GTSurferMove extends BaseMove {
                     best.firstWave.redirected = true;
                     System.out.println("8888888888888888888888888888888888888888888888888888888888");
                 }
-                */
+
 
                     // We need to slow down..
                 if (!surfWave.redirected)

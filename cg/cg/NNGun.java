@@ -191,7 +191,7 @@ public class NNGun extends BaseGun {
             g.drawOval((int) x, (int) y, 2, 2);
 
             double fdist = next.location.distance(fireLocation);
-System.out.println("Distance: " + fdist + ", Bullet Speed: " + bulletSpeed + ", Bullet Distance: " + (count*bulletSpeed));
+//System.out.println("Distance: " + fdist + ", Bullet Speed: " + bulletSpeed + ", Bullet Distance: " + (count*bulletSpeed));
             if ((count * bulletSpeed) > fdist-20)
             {
                 intercepted = true;
