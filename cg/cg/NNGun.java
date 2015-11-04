@@ -137,7 +137,7 @@ public class NNGun extends BaseGun {
         waves.clear();
     }
 
-    public RobotState[] calculateEnemyMoves(boolean clockwise)  // May want to make the absBearing to be perp to player always
+    public ArrayList<RobotState> calculateEnemyMoves(boolean clockwise, Point2D.Double fireLocation)  // May want to make the absBearing to be perp to player always
     {
         double maxVelocity = 8;
         double heading = _radarScanner.nme.headingRadians;
@@ -167,16 +167,20 @@ public class NNGun extends BaseGun {
         int movesToFind = possibleTicks; //(int)CTUtils.clamp(3*possibleTicks, 20, 50); // Presently 3 and 50 are optimal
 
         Graphics2D g = _robot.getGraphics();
-        RobotState[] moves = new RobotState[movesToFind];
+        ArrayList<RobotState> moves = new ArrayList<RobotState>();
 
-        for (int i = 0; i < movesToFind; i++) {
+        int count = 0;
+        boolean intercepted = false;
+        double bulletSpeed = CTUtils.bulletVelocity(_radarScanner.FIRE_POWER);
+
+        do{
             RobotState next = CTUtils.nextPerpendicularWallSmoothedLocation(
                     new Point2D.Double(x, y), absBearingRadians, velocity, maxVelocity, heading,
                     attackAngle, clockwise, currentTime,
                     _radarScanner._fieldRect, 800, 600,
                     140, false);
 
-            moves[i] = next;
+            moves.add(next);
             x = next.location.getX();
             y = next.location.getY();
             velocity = next.velocity;
@@ -185,26 +189,35 @@ public class NNGun extends BaseGun {
 
             g.setColor(new Color(0.36078432f, 0.56078434f, 1.0f));
             g.drawOval((int) x, (int) y, 2, 2);
-        }
+
+            double fdist = next.location.distance(fireLocation);
+System.out.println("Distance: " + fdist + ", Bullet Speed: " + bulletSpeed + ", Bullet Distance: " + (count*bulletSpeed));
+            if ((count * bulletSpeed) > fdist-20)
+            {
+                intercepted = true;
+            }
+            count++;
+
+        } while (!intercepted && count < 500);
 
         return moves;
     }
 
-    public RobotState[] getEnemyMoves() {
-        RobotState[] right = calculateEnemyMoves(true);
-        RobotState[] left = calculateEnemyMoves(false);
+    public RobotState[] getEnemyMoves(Point2D.Double fireLocation) {
+        ArrayList<RobotState> right = calculateEnemyMoves(true, fireLocation);
+        ArrayList<RobotState> left = calculateEnemyMoves(false, fireLocation);
 
-        RobotState[] moves = new RobotState[left.length + right.length];
-        int middleIndex = left.length;
+        RobotState[] moves = new RobotState[left.size() + right.size()];
+        int middleIndex = left.size();
 
         int j = 0;
-        for (int i = left.length - 1; i >= 0; i--) {
-            moves[j++] = left[i];
+        for (int i = left.size() - 1; i >= 0; i--) {
+            moves[j++] = left.get(i);
 
         }
 
-        for (int i = 0; i < right.length; i++) {
-            moves[i + middleIndex] = right[i];
+        for (int i = 0; i < right.size(); i++) {
+            moves[i + middleIndex] = right.get(i);
         }
 
         return moves;
@@ -722,7 +735,7 @@ System.out.println("Since velocity change; " + s.SinceVelocityChange);
 
         // First let's calculate the lowest and highest possible guessfactors
 
-        newWave.moves = getEnemyMoves();
+        newWave.moves = getEnemyMoves(new Point2D.Double(x, y));
 
         double lowBearing = CTUtils.absoluteBearing(new Point2D.Double(x, y), newWave.moves[0].location);
         double highBearing = CTUtils.absoluteBearing(new Point2D.Double(x, y), newWave.moves[newWave.moves.length - 1].location);
