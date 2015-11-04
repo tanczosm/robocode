@@ -41,7 +41,10 @@ public class GTSurferMove extends BaseMove {
     public Backpropagation basicTrain;
     public BasicNetwork randNetwork;
     public Backpropagation randTrain;
+    public BasicNetwork classifyNetwork;
+    public Backpropagation classifyTrain;
     private ArrayList<MLDataPair> _theData;
+    private ArrayList<MLDataPair> _classifyData;
     private ArrayList<MLDataPair> _lastHitsData;
 
     public static final int INPUT_LENGTH = 49;
@@ -50,6 +53,7 @@ public class GTSurferMove extends BaseMove {
     public static int BINS = OUTPUT_LENGTH;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
     public static double _randStats[] = new double[BINS];
+    public static double _classifyStats[] = new double[BINS];
     public Point2D.Double _myLocation;     // our bot's location
     public Point2D.Double _enemyLocation;  // enemy bot's location
 
@@ -118,15 +122,31 @@ public class GTSurferMove extends BaseMove {
         randNetwork.reset();
         randNetwork.reset(1000);
 
+        classifyNetwork = new BasicNetwork();
+        classifyNetwork.addLayer(new BasicLayer(null, true, OUTPUT_LENGTH));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
+        classifyNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+        classifyNetwork.getStructure().finalizeStructure();
+        classifyNetwork.reset();
+        classifyNetwork.reset(1000);
+
+
+        _classifyData = new ArrayList<MLDataPair>();
         _theData = new ArrayList<MLDataPair>();
         _lastHitsData = new ArrayList<MLDataPair>();
         _theData.add(new BasicMLDataPair(new BasicMLData(new double[INPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
+        _classifyData.add(new BasicMLDataPair(new BasicMLData(new double[OUTPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
+
         MLDataSet trainingSet = new BasicMLDataSet(_theData);
-        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.3, 0.7);
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
         basicTrain.setBatchSize(1);
 
         randTrain = new Backpropagation(basicNetwork, trainingSet, 0.1, 0.9);
         randTrain.setBatchSize(1);
+
+        MLDataSet classifyTrainingSet = new BasicMLDataSet(_classifyData);
+        classifyTrain = new Backpropagation(classifyNetwork, classifyTrainingSet, 0.7, 0.3);
+        classifyTrain.setBatchSize(1);
 
     }
 
@@ -401,6 +421,12 @@ public class GTSurferMove extends BaseMove {
         g.setColor(Color.GREEN);
         g.setFont(new Font("Verdana", Font.PLAIN, 11));
         g.drawString("Roughness: " + new DecimalFormat("#.##").format(sum), topx, topy+120);
+
+        drawFactor(_classifyStats, 0, _classifyStats.length, "Classify Output", topx, topy+300, 0);
+
+        drawFactorIndex("BEST", debugFactorIndex, topx, topy+290, 8);
+        drawFactorIndex("CUR", debugCurrentIndex, topx, topy+290, 0);
+
     }
 
     public void drawFactorIndex(String name, double factorIndex, int topx, int topy, int offset)
@@ -652,6 +678,7 @@ public class GTSurferMove extends BaseMove {
             BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
             surfWave.waveGuessFactors = basicNetwork.compute(inp).getData();
             _surfStats = surfWave.waveGuessFactors;
+            _classifyStats = classifyNetwork.compute(new BasicMLData(surfWave.waveGuessFactors)).getData();
 
             double[] randGF = randNetwork.compute(inp).getData();
             double[] stats2 = new double[_randStats.length];
@@ -738,8 +765,6 @@ public class GTSurferMove extends BaseMove {
     // were hit, update our stat array to reflect the danger in that area.
     public void logHit(EnemyWave ew, Point2D.Double targetLocation, boolean isHit) {
 
-        if (!isHit)
-            return;  // Bail.. don't log hits that aren't real
 
         double enemyX = ew.fireLocation.getX(), enemyY = ew.fireLocation.getY();
         double startX = targetLocation.getX(), startY = targetLocation.getY();
@@ -749,6 +774,26 @@ public class GTSurferMove extends BaseMove {
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
         double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*3, centers);
+
+
+        if (!isHit)
+        {
+            _classifyData.clear();
+            _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal)));
+            classifyTrain.iteration(1);
+            return;
+        }
+        else
+        {
+            _classifyData.clear();
+            double[] ideal2 = new double[ideal.length];
+            for (int i = 0; i < ideal2.length; i++)
+            {
+                ideal2[i] = Math.max(0.0, ew.waveGuessFactors[i] - ideal[i]);
+            }
+            _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal2)));
+            classifyTrain.iteration(1);
+        }
 
         /*
         if (isHit)
@@ -1157,7 +1202,7 @@ public class GTSurferMove extends BaseMove {
         double danger = 0.0;
         for (int i = startIndex; i <= endIndex; i++)
         {
-            danger += surfWave.waveGuessFactors[i] * (shadows[i]/2);
+                danger += _randStats[i]*0.2 + ((1.0-_classifyStats[i])*.5 + surfWave.waveGuessFactors[i]) * (shadows[i]/2);
 
         }
         danger /= totalSpan;
