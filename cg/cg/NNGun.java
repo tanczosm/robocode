@@ -38,7 +38,7 @@ public class NNGun extends BaseGun {
     public BasicNetwork randomNetwork;
     public Backpropagation randomTrain;
 
-    public static final int INPUT_LENGTH = 70;
+    public static final int INPUT_LENGTH = 70+11;
     public static final int OUTPUT_LENGTH = 131;
 
     public static final int GF_ZERO = (OUTPUT_LENGTH-1) / 2; // 23; //15;
@@ -537,6 +537,8 @@ public class NNGun extends BaseGun {
         newWave.fireTime = _robot.getTime();
         newWave.isReal = true;
 
+        currentGuessFactor = s.GuessFactorChosen;
+
        /*if (newWave != null)
             waves.add(newWave);*/
 
@@ -612,9 +614,9 @@ System.out.println("Since velocity change; " + s.SinceVelocityChange);
         //System.out.println("wallfd: " + Math.min(1.5, s.WallRadialDistanceForward) + ", wallbk" + Math.min(1.0, s.WallRadialDistanceBack));
 
         // Current guess factor - Range -1.0 - 1.0, split into 11 features
-        double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 0.1, RBFUtils.getCenters(-1.0, 1.0, 11));
+        double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 0.3, RBFUtils.getCenters(-1.0, 1.0, 11));
 
-        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, fsincedirch, ffwrdf, ffwrdb);
+        return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, fsincedirch, ffwrdf, ffwrdb, fcurgf);
 
         // Situation s already contains normalized data
         /*
@@ -787,7 +789,7 @@ System.out.println("Since velocity change; " + s.SinceVelocityChange);
 
         // this should do the opposite of the math in the WaveBullet:
         double guessfactor = (double) (bestGF - GF_ZERO) / (double) GF_ZERO;
-        currentGuessFactor = guessfactor;
+        s.GuessFactorChosen = guessfactor;
 
         /*
         double angleOffset = direction < 0 ? -(guessfactor * newWave.lowGF * newWave.maxEscapeAngle) :

@@ -110,7 +110,8 @@ public class Targeting {
         if (s != null)
             _lastSituation = s;
 
-        double bearing = _currentGun.projectBearing(s, next.x, next.y, enemyHeading);
+        double bearing = !_aiming ? _currentGun.projectBearing(s, next.x, next.y, enemyHeading) : _lastBearing;
+        _lastBearing = bearing;
 
 
         Point2D.Double target = CTUtils.project(_radarScanner._myLocation, Utils.normalRelativeAngle(enemyHeading + bearing), 1000);
@@ -130,7 +131,7 @@ public class Targeting {
 
         selectGun();
 
-        if (RadarScanner.FIRE_POWER > 0/* && _robot.getGunHeat() / _coolingRate < 2d*/) {
+        if (RadarScanner.FIRE_POWER > 0 && _robot.getGunHeat() / _coolingRate < 2d) {
 
             // Rotate gun according to bearing
             if (bearing < Double.MAX_VALUE && _robot.getGunHeat() <= 2*_coolingRate/* && distance > 70d*/) {
