@@ -140,13 +140,13 @@ public class Targeting {
             // Check to see if gun finished rotating and we can fire
             _aiming = true;
             if (bearing < Double.MAX_VALUE
-                    && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(9d / _radarScanner.nme.distance) || distance < 70d)
+                    && (Math.abs(_robot.getGunTurnRemainingRadians()) < Math.atan(8d / _radarScanner.nme.distance) || distance < 70d)
                     ) {
                 //s.IsRealBullet = true;
 
                 //Bullet b;
 
-                if ((_robot.getEnergy() > (RadarScanner.FIRE_POWER + 0.01) || _radarScanner.nme.energy == 0) && (lastBullet = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
+                if ((_robot.getEnergy() > (RadarScanner.FIRE_POWER + 0.01) || _radarScanner.nme.energy == 0 || V.mode == V.Modes.TARGET_ONLY) && (lastBullet = _robot.setFireBullet(RadarScanner.FIRE_POWER)) != null) {
                     _aiming = false;
                     _shotsFired++;
                     reportAccuracy();
@@ -234,7 +234,7 @@ public class Targeting {
         }
 
 
-        RadarScanner.FIRE_POWER = 1.92d;
+        //RadarScanner.FIRE_POWER = 1.92d;
 
         if (RadarScanner.FIRE_POWER > playerEnergy || playerEnergy < 5) {
             RadarScanner.FIRE_POWER = 0.1d;

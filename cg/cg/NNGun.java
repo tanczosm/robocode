@@ -584,9 +584,10 @@ public class NNGun extends BaseGun {
         // Need distance delta
         double[] fdistlast10 = RBFUtils.processDataIntoFeatures(s.DistanceLast10, 20, RBFUtils.getCenters(0, 80, 6));
 
-
+        if (s.SinceVelocityChange > 0.01)
+System.out.println("Since velocity change; " + s.SinceVelocityChange);
         // SinceVelocityChange - Range 0 - 1, split into 7 features
-        double[] fsincevelch = RBFUtils.processDataIntoFeatures(s.SinceVelocityChange, 0.05, RBFUtils.getCenters(0, 1, 7));
+        double[] fsincevelch = RBFUtils.processDataIntoFeatures(CTUtils.clamp(s.SinceVelocityChange*100,0,1), 0.05, RBFUtils.getCenters(0, 1, 7));
 
         /*
         // Wall Tries Forward - Range 0.0 - 20.0, split into 7 features
@@ -603,15 +604,15 @@ public class NNGun extends BaseGun {
         double wrdb = Math.min(1.0, s.WallRadialDistanceBack);
 
         // Forward radians to wall - Range 0.0 - 1.5, split into 7 features
-        double[] ffwrdf = RBFUtils.processDataIntoFeatures(wrdf, 0.05, RBFUtils.getCenters(0, 1.5, 7));
+        double[] ffwrdf = RBFUtils.processDataIntoFeatures(wrdf, 0.03, RBFUtils.getCenters(0, 1.5, 7));
 
         // Back radians to wall - Range 0.0 - 1.0, split into 4 features
-        double[] ffwrdb = RBFUtils.processDataIntoFeatures(wrdb, 0.05, RBFUtils.getCenters(0, 1.0, 4));
+        double[] ffwrdb = RBFUtils.processDataIntoFeatures(wrdb, 0.03, RBFUtils.getCenters(0, 1.0, 4));
 
         //System.out.println("wallfd: " + Math.min(1.5, s.WallRadialDistanceForward) + ", wallbk" + Math.min(1.0, s.WallRadialDistanceBack));
 
         // Current guess factor - Range -1.0 - 1.0, split into 11 features
-        //double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 1.0, RBFUtils.getCenters(-1.0, 1.0, 11));
+        double[] fcurgf = RBFUtils.processDataIntoFeatures(currentGuessFactor, 0.1, RBFUtils.getCenters(-1.0, 1.0, 11));
 
         return RBFUtils.mergeFeatures(fdistance, flatvel, faccel, fadvancevel, fdistlast10, fsincevelch, fsincedirch, ffwrdf, ffwrdb);
 

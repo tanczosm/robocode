@@ -28,6 +28,9 @@ import java.util.*;
  */
 public class GTSurferMove extends BaseMove {
 
+    static final double ONE_QUARTER = Math.PI / 2d;
+    static final double ONE_EIGHTH = Math.PI / 4d;
+
     private AdvancedRobot _robot;
     private RadarScanner _radarScanner;
 
@@ -220,6 +223,18 @@ public class GTSurferMove extends BaseMove {
     public static Rectangle2D.Double _fieldRect
             = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
     public static double WALL_STICK = 160;
+
+
+    public double getEvasion(double distance, double lastDistance, double currentDistance, double advancingVelocity)
+    {
+        if (lastDistance < 150d || (lastDistance < 225d && advancingVelocity > 4.5d))
+            return 2.67d;
+
+        if (distance < currentDistance)
+            return ONE_QUARTER + (ONE_QUARTER / (1d + Math.exp((distance - currentDistance) / 100d)) - ONE_EIGHTH);
+
+        return ONE_QUARTER;
+    }
 
     public void scan(ScannedRobotEvent e) {
         _myLocation = new Point2D.Double(_robot.getX(), _robot.getY());
@@ -977,8 +992,26 @@ public class GTSurferMove extends BaseMove {
         boolean intercepted = false;
 
         do {
+            double optimalDistance = 400;
+
+            double energyDiff = _radarScanner.nme.energy - _robot.getEnergy();
+
+            if (energyDiff < -40)
+            {
+                optimalDistance = 200;
+            }
+            else if (energyDiff > 20)
+            {
+                optimalDistance = 600;
+            }
+            else if (energyDiff > 40)
+            {
+                optimalDistance = 500;
+            }
+            optimalDistance = 400;
+
             double distance = surfWave.predictedPosition.distance(surfWave.fireLocation);
-            double offset = Math.PI/2 - 1 + distance/400;
+            double offset = Math.PI/2 - 1 + distance/optimalDistance; // distance / 400 ?
 
             moveAngle =
                     CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
