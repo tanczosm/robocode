@@ -1202,7 +1202,7 @@ public class GTSurferMove extends BaseMove {
         double danger = 0.0;
         for (int i = startIndex; i <= endIndex; i++)
         {
-                danger += _randStats[i]*0.2 + ((1.0-_classifyStats[i])*.5 + surfWave.waveGuessFactors[i]) * (shadows[i]/2);
+                danger += ((1.0-_classifyStats[i])*.5 + surfWave.waveGuessFactors[i]) * (shadows[i]/2);
 
         }
         danger /= totalSpan;
