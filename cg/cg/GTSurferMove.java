@@ -621,19 +621,20 @@ public class GTSurferMove extends BaseMove {
             g.setColor(new Color(128, 1, 0));
             g.drawOval((int)(ew.fireLocation.x-(ew.distanceTraveled)), (int)(ew.fireLocation.y-(ew.distanceTraveled)), (int)ew.distanceTraveled*2, (int)ew.distanceTraveled*2);
 
+            /*
             if (ew.didIntersect(_myLocation, _robot.getTime()))
             {
                 logHit(ew, _myLocation, false);
                 _enemyWaves.remove(x);
                 x--;
-            }
-            /*
+            }*/
+
             if (ew.distanceTraveled >
                     _myLocation.distance(ew.fireLocation) + 50) {
                 logHit(ew, _myLocation, false);
                 _enemyWaves.remove(x);
                 x--;
-            }*/
+            }
         }
 
         drawWaves();
@@ -1059,14 +1060,17 @@ public class GTSurferMove extends BaseMove {
             double offset = Math.PI/2 - 1 + distance/optimalDistance; // distance / 400 ?
 
             moveAngle =
+
                     CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
                                         surfWave.predictedPosition,  CTUtils.absoluteBearing(surfWave.fireLocation,
                                     surfWave.predictedPosition) + (direction * (offset)), direction, WALL_STICK)
                                     - surfWave.predictedHeading;
-            /*
-                    GTSurferMove.wallSmoothing(predictedPosition, CTUtils.absoluteBearing(surfWave.fireLocation,
-                            predictedPosition) + (direction * (offset)), direction)
-                            - predictedHeading;*/
+
+/*
+                    wallSmoothing(surfWave.predictedPosition, CTUtils.absoluteBearing(surfWave.fireLocation,
+                            surfWave.predictedPosition) + (direction * (offset)), direction)
+                            - surfWave.predictedHeading;
+                            */
             moveDir = 1;
 
             if(Math.cos(moveAngle) < 0) {
@@ -1202,7 +1206,7 @@ public class GTSurferMove extends BaseMove {
         double danger = 0.0;
         for (int i = startIndex; i <= endIndex; i++)
         {
-                danger += ((1.0-_classifyStats[i])*.5 + surfWave.waveGuessFactors[i]) * (shadows[i]/2);
+                danger += (/*(1.0-_classifyStats[i])*.5 + */surfWave.waveGuessFactors[i]);// * (shadows[i]/2);
 
         }
         danger /= totalSpan;
@@ -1406,7 +1410,7 @@ public class GTSurferMove extends BaseMove {
             debugFactorIndex = getFactorIndex(best.firstWave, endp1);
             debugCurrentIndex = getFactorIndex(best.firstWave, _myLocation);
 
-
+            /*
             if (tripTicks < bulletTicks && bulletTicks < 100)
             {
                 // We are going to have some time to spare!!
@@ -1473,6 +1477,7 @@ public class GTSurferMove extends BaseMove {
                 double cornerDist = CTUtils.cornerDistance(_myLocation, 800,600);
 
 
+
                 if (best.firstWave.redirected == false && safePoints.size() > 0
                         && _safeZone.contains(endp2)
                         && cornerDist > 100
@@ -1487,6 +1492,7 @@ public class GTSurferMove extends BaseMove {
                 }
 
 
+
                     // We need to slow down..
                 if (!surfWave.redirected)
                 {
@@ -1499,7 +1505,7 @@ public class GTSurferMove extends BaseMove {
             }
             else
                 _robot.setMaxVelocity(8);
-
+                */
 
             goTo(p1);
         }
