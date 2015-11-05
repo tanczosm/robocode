@@ -66,6 +66,8 @@ public class GTSurferMove extends BaseMove {
     public ArrayList<Double> _LateralVelocityLast10;
     private final LinkedList<Bullet> bullets = new LinkedList<Bullet>();
 
+    public GameStats log;
+
     private Random _rand;
 
     // TEMPORARY
@@ -148,6 +150,7 @@ public class GTSurferMove extends BaseMove {
         classifyTrain = new Backpropagation(classifyNetwork, classifyTrainingSet, 0.7, 0.3);
         classifyTrain.setBatchSize(1);
 
+        log = new GameStats();
     }
 
     public String getName ()
@@ -173,6 +176,8 @@ public class GTSurferMove extends BaseMove {
     {
         bullets.clear();
         _enemyWaves.clear();
+         //log.reset();
+
     }
 
 
@@ -427,6 +432,12 @@ public class GTSurferMove extends BaseMove {
         drawFactorIndex("BEST", debugFactorIndex, topx, topy+290, 8);
         drawFactorIndex("CUR", debugCurrentIndex, topx, topy+290, 0);
 
+        double hitratio = log.getHitRatio();
+
+        g.setColor(Color.GREEN);
+        g.setFont(new Font("Verdana", Font.PLAIN, 11));
+        g.drawString("Enemy Hit Ratio: " + new DecimalFormat("#.##").format(hitratio), 10, 588);
+
     }
 
     public void drawFactorIndex(String name, double factorIndex, int topx, int topy, int offset)
@@ -555,7 +566,8 @@ public class GTSurferMove extends BaseMove {
 
                 for (int k = shadowStart; k <= shadowEnd; k++)
                 {
-                    shadows[k] = 0.0;
+                    int index = best.firstWave.direction >= 0 ? k : OUTPUT_LENGTH-1-k;
+                    shadows[index] = 0.0;
                 }
             }
 
@@ -569,14 +581,14 @@ public class GTSurferMove extends BaseMove {
             EnemyWave ew = (EnemyWave)_enemyWaves.get(i);
 
 
-            Point2D.Double center = new Point2D.Double(ew.fireLocation.x, ew.fireLocation.y);
+            Point2D.Double center = ew.fireLocation;
 
             //int radius = (int)(w.distanceTraveled + w.bulletVelocity);
 
             double angleDivision = (ew.maxEscapeAngle * 2.0 / (double)OUTPUT_LENGTH);
+
             int radius = (int)ew.getRadius(_robot.getTime());
 
-            radius += ew.bulletVelocity;
             g.setColor(new Color(255, 188, 0));
             if (radius - 40 < center.distance(_myLocation))
                 g.drawOval((int) (center.x - radius), (int) (center.y - radius), radius * 2, radius * 2);
@@ -591,15 +603,19 @@ public class GTSurferMove extends BaseMove {
                     //float shade = (float) ew.waveGuessFactors[p];
                     //shade = (float) CTUtils.clamp(shade * 10, 0.2, 1.0);
                     //g.setColor(new Color(0, shade, 1, 1.0f));
-                    g.setColor(getShade(ew.waveGuessFactors[p]));
+                    int index = ew.direction >= 0 ? p : OUTPUT_LENGTH-1-p;
 
-                    if (shadows[p] < 1.0)
+                    g.setColor(getShade(ew.waveGuessFactors[index]));
+
+                    if (shadows[index] < 1.0)
                         g.setColor(new Color(141, 64, 169));
 
                     //System.out.print(shade + " ");
                     //System.out.println("DA: " + ew.directAngle + ", AD: " + angleDivision + ", MEA: " + ew.maxEscapeAngle);
-                    Point2D.Double p2 = CTUtils.project(center, (ew.directAngle ) + (angleDivision * p) - (angleDivision * (OUTPUT_LENGTH / 2)), radius-ew.bulletVelocity);
-                    Point2D.Double p3 = CTUtils.project(p2, (ew.directAngle) + (angleDivision * p) - (angleDivision * (OUTPUT_LENGTH / 2)), (int) (ew.bulletVelocity));
+                    double pangle = (ew.directAngle ) + (angleDivision * p) - (angleDivision * (OUTPUT_LENGTH / 2));
+
+                    Point2D.Double p2 = CTUtils.project(center, pangle, radius);
+                    Point2D.Double p3 = CTUtils.project(p2, pangle, (int) (ew.bulletVelocity));
 
 //                g.drawOval((int) (p2.x - 1), (int) (p2.y - 1), 2, 2);
                     g.drawLine((int) p2.getX(), (int) p2.getY(), (int) p3.getX(), (int) p3.getY());
@@ -650,9 +666,9 @@ public class GTSurferMove extends BaseMove {
 
         for (int x = 0; x < _enemyWaves.size(); x++) {
             EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
-            double distance = ew.currentDistanceToPlayer;
+            double distance = ew.fireLocation.distance(_myLocation);
 
-            if (distance > ew.bulletVelocity) {
+            if (ew.distanceTraveled < distance - 18) {
                 surfWave = ew;
 
                 if (x+1 < _enemyWaves.size())
@@ -776,6 +792,8 @@ public class GTSurferMove extends BaseMove {
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
         double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*3, centers);
 
+        // Scoring separately
+        log.add(isHit, (int)ew.distanceTraveled);
 
         if (!isHit)
         {
@@ -1054,14 +1072,21 @@ public class GTSurferMove extends BaseMove {
             {
                 optimalDistance = 500;
             }
-            optimalDistance = 400;
+            //optimalDistance = 400;
 
             double distance = surfWave.predictedPosition.distance(surfWave.fireLocation);
             double offset = Math.PI/2 - 1 + distance/optimalDistance; // distance / 400 ?
 
-            moveAngle =
+            double cdist = CTUtils.cornerDistance(surfWave.predictedPosition, _fieldRect.width, _fieldRect.height);
 
-                    CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
+            /*
+            if (cdist > 100)
+                moveAngle = CTUtils.absoluteBearing(surfWave.fireLocation,
+                    surfWave.predictedPosition) + (direction * (offset)) - surfWave.predictedHeading;
+
+            else
+            */
+                moveAngle =        CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
                                         surfWave.predictedPosition,  CTUtils.absoluteBearing(surfWave.fireLocation,
                                     surfWave.predictedPosition) + (direction * (offset)), direction, WALL_STICK)
                                     - surfWave.predictedHeading;
@@ -1094,6 +1119,9 @@ public class GTSurferMove extends BaseMove {
             // calculate the new predicted position
             surfWave.predictedPosition = CTUtils.project(surfWave.predictedPosition, surfWave.predictedHeading, surfWave.predictedVelocity);
 
+            if (simpleWallDistance(surfWave.predictedPosition) < 26)
+                break;
+
             //add this point the our prediction
             traveledPoints.add(surfWave.predictedPosition);
 
@@ -1105,7 +1133,7 @@ public class GTSurferMove extends BaseMove {
                 //   + surfWave.bulletVelocity
                     ) {
                 //intercepted = true;
-                /*
+
                 double[][] corners = surfWave.getCorners(new Rectangle2D.Double(surfWave.predictedPosition.x-18, surfWave.predictedPosition.y-18, 36, 36));
                 double wd1 = surfWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - surfWave.distanceTraveled - distTraveled;
                 double wd2 = surfWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - surfWave.distanceTraveled - distTraveled;
@@ -1115,7 +1143,6 @@ public class GTSurferMove extends BaseMove {
                 double mindist = Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4));
 
                 if (mindist <= surfWave.bulletVelocity)
-                */
                     intercepted = true;
             }
         } while(!intercepted && counter < 500);
@@ -1168,6 +1195,18 @@ public class GTSurferMove extends BaseMove {
         return surfWave.waveGuessFactors[index]/distance;
     }
 
+
+    public double simpleWallDistance(Point2D.Double position)
+    {
+        double distance = 0;
+
+        double distanceY = Math.min(position.y, _robot.getBattleFieldHeight()-position.y);
+        double distanceX = Math.min(position.x, _robot.getBattleFieldWidth()-position.x);
+
+        return Math.min(distanceX, distanceY);
+
+    }
+
     // Calculates the average danger over a particular span of guess factors
     public double checkDangerSpan(EnemyWave surfWave, Point2D.Double position, int totalSpan)
     {
@@ -1178,6 +1217,8 @@ public class GTSurferMove extends BaseMove {
         int startIndex = (int)CTUtils.clamp(index-halfSpan, 0, index);
         int endIndex = (int)CTUtils.clamp(index+halfSpan, index, OUTPUT_LENGTH-1);
 
+        double wallDist = simpleWallDistance(position);
+        double extraDanger = wallDist <= 96 ? ((wallDist-96)/64) : 0;
         boolean hasShadows = false;
 
         Arrays.fill(shadows, 1.0);
@@ -1204,13 +1245,19 @@ public class GTSurferMove extends BaseMove {
         //    System.out.println(Arrays.toString(shadows));
 
         double danger = 0.0;
+        double hitratio = log.getHitRatio();
         for (int i = startIndex; i <= endIndex; i++)
         {
-                danger += (/*(1.0-_classifyStats[i])*.5 + */surfWave.waveGuessFactors[i]);// * (shadows[i]/2);
+                danger += (/*_classifyStats[i] + */surfWave.waveGuessFactors[i])*(shadows[i]/2);
 
         }
+
         danger /= totalSpan;
 
+        danger = Math.max(danger, extraDanger);
+
+        if (!_fieldRect.contains(position))
+            return Double.MAX_VALUE;
 
         //danger *= position.distance(surfWave.fireLocation) - surfWave.distanceTraveled;
 
@@ -1410,7 +1457,9 @@ public class GTSurferMove extends BaseMove {
             debugFactorIndex = getFactorIndex(best.firstWave, endp1);
             debugCurrentIndex = getFactorIndex(best.firstWave, _myLocation);
 
-            /*
+            System.out.println("Closest wave direction: " + best.firstWave.direction);
+
+
             if (tripTicks < bulletTicks && bulletTicks < 100)
             {
                 // We are going to have some time to spare!!
@@ -1505,7 +1554,7 @@ public class GTSurferMove extends BaseMove {
             }
             else
                 _robot.setMaxVelocity(8);
-                */
+
 
             goTo(p1);
         }
