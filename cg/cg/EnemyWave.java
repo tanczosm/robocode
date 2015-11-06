@@ -41,11 +41,13 @@ class EnemyWave implements Comparable<EnemyWave> {
     public double maxFactor = java.lang.Double.NEGATIVE_INFINITY;
 
     // Used by the pathing predictor, where we will end at when we are at the last point on safePoints
+    /*
     Point2D.Double predictedPosition;
     double predictedVelocity;
     double predictedHeading;
+    */
 
-    ArrayList safePoints;
+    ArrayList<RobotState> safePoints;
     double[] waveGuessFactors;
     double[] waveGuessFactorsRand;
 

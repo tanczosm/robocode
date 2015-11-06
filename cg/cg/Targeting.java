@@ -237,7 +237,7 @@ public class Targeting {
 
         RadarScanner.FIRE_POWER = 1.92d;
 
-        if (RadarScanner.FIRE_POWER > playerEnergy || playerEnergy < 5) {
+        if (RadarScanner.FIRE_POWER > playerEnergy || playerEnergy < 15) {
             RadarScanner.FIRE_POWER = 0.1d;
         }
         /*

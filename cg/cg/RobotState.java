@@ -19,6 +19,7 @@ public class RobotState {
         heading = botHeadingRadians;
         velocity = botVelocity;
         smoothing = false;
+        danger = Double.MAX_VALUE;
     }
 
     public RobotState(Point2D.Double botLocation, double botHeadingRadians,
