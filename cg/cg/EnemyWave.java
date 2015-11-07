@@ -51,6 +51,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     double[] waveGuessFactors;
     double[] waveGuessFactorsRand;
 
+    public boolean imaginary = false;
     public boolean redirected = false;
 
     public EnemyWave() {
