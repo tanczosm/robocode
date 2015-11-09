@@ -2,15 +2,17 @@ package cg;
 
 import java.awt.geom.Point2D;
 
-public class RobotState {
+public class RobotState implements Comparable<RobotState> {
     public Point2D.Double location;
     public double heading;
     public double velocity;
+    public double distanceRemaining;
     public long time;
     public boolean smoothing;
     public double danger;
     public int tickDistance;
     public double dangerDensity; // When combined with adjacent states, how dangerous is this spot?
+    public boolean reachable; // True if reachable WITHOUT NEEDING PRECISE CHECKING
 
     public RobotState(Point2D.Double botLocation, double botHeadingRadians,
                       double botVelocity) {
@@ -20,6 +22,8 @@ public class RobotState {
         velocity = botVelocity;
         smoothing = false;
         danger = Double.MAX_VALUE;
+        distanceRemaining = 0;
+        reachable = false;
     }
 
     public RobotState(Point2D.Double botLocation, double botHeadingRadians,
@@ -38,9 +42,27 @@ public class RobotState {
         smoothing = smooth;
     }
 
+    public RobotState(Point2D.Double botLocation, double botHeadingRadians,
+                      double botVelocity, long currentTime, double distanceRemain) {
+
+        this(botLocation, botHeadingRadians, botVelocity, currentTime);
+
+        this.distanceRemaining = distanceRemain;
+    }
+
     public Object clone() {
         return new RobotState((Point2D.Double) location.clone(), heading,
                 velocity, time, smoothing);
+    }
+
+    public int compareTo(RobotState other)
+    {
+        if (danger < other.danger)
+            return -1;
+        else if (danger == other.danger)
+            return 0;
+
+        return 1;
     }
 
 }

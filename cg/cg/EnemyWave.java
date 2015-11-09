@@ -48,7 +48,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     */
 
     ArrayList<RobotState> safePoints;
-    double[] waveGuessFactors;
+    double[] waveGuessFactors = null;
     double[] waveGuessFactorsRand;
 
     public boolean imaginary = false;

@@ -43,6 +43,8 @@ public class GTSurferMove extends BaseMove {
     public Backpropagation randTrain;
     public BasicNetwork classifyNetwork;
     public Backpropagation classifyTrain;
+    public BasicNetwork flattenNetwork;
+    public Backpropagation flattenTrain;
     private ArrayList<MLDataPair> _theData;
     private ArrayList<MLDataPair> _classifyData;
     private ArrayList<MLDataPair> _lastHitsData;
@@ -55,6 +57,8 @@ public class GTSurferMove extends BaseMove {
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
     public static double _randStats[] = new double[BINS];
     public static double _classifyStats[] = new double[BINS];
+    public static double _flattenStats[] = new double[BINS];
+
     public Point2D.Double _myLocation;     // our bot's location
     public Point2D.Double _enemyLocation;  // enemy bot's location
 
@@ -119,6 +123,14 @@ public class GTSurferMove extends BaseMove {
         basicNetwork.reset();
         basicNetwork.reset(1000);
 
+        flattenNetwork = new BasicNetwork();
+        flattenNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, OUTPUT_LENGTH/2));
+        flattenNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+        flattenNetwork.getStructure().finalizeStructure();
+        flattenNetwork.reset();
+        flattenNetwork.reset(1000);
+
         randNetwork = new BasicNetwork();
         randNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
         //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, 39));
@@ -144,11 +156,14 @@ public class GTSurferMove extends BaseMove {
         _classifyData.add(new BasicMLDataPair(new BasicMLData(new double[OUTPUT_LENGTH]), new BasicMLData(new double[OUTPUT_LENGTH])));
 
         MLDataSet trainingSet = new BasicMLDataSet(_theData);
-        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.2);
+        basicTrain = new Backpropagation(basicNetwork, trainingSet, 0.7, 0.3);
         basicTrain.setBatchSize(1);
 
         randTrain = new Backpropagation(basicNetwork, trainingSet, 0.4, 0.5);
         randTrain.setBatchSize(1);
+
+        flattenTrain = new Backpropagation(flattenNetwork, trainingSet, 0.7, 0.3);
+        flattenTrain.setBatchSize(1);
 
         MLDataSet classifyTrainingSet = new BasicMLDataSet(_classifyData);
         classifyTrain = new Backpropagation(classifyNetwork, classifyTrainingSet, 0.7, 0.3);
@@ -189,7 +204,7 @@ public class GTSurferMove extends BaseMove {
 
     private void calculateShadow(final EnemyWave wave, final Bullet b) {
 
-        if (b == null)
+        if (b == null || wave.imaginary)
             return;
 
         Graphics g = _robot.getGraphics();
@@ -352,7 +367,7 @@ public class GTSurferMove extends BaseMove {
         if (bulletPowers.size() > 5)
             bulletPowers.remove(5);
 
-        if (_surfData.size() > 2) {
+        if (_surfData.size() > 2 && !imaginary) {
 
             surfData _surf = ((surfData)_surfData.get(2));
 
@@ -456,12 +471,25 @@ public class GTSurferMove extends BaseMove {
         Graphics g = _robot.getGraphics();
         g.setColor(Color.GREEN);
         g.setFont(new Font("Verdana", Font.PLAIN, 11));
-        g.drawString("Roughness: " + new DecimalFormat("#.##").format(sum), topx, topy+120);
+        g.drawString("Roughness: " + new DecimalFormat("#.##").format(sum), topx, 4);
 
         drawFactor(_classifyStats, 0, _classifyStats.length, "Classify Output", topx, topy + 300, 0);
 
         drawFactorIndex("BEST", debugFactorIndex, topx, topy + 290, 8);
         drawFactorIndex("CUR", debugCurrentIndex, topx, topy + 290, 0);
+
+        drawFactor(_flattenStats, 0, _flattenStats.length, "Flattener Output", topx, topy + 380, 0);
+
+        drawFactorIndex("BEST", debugFactorIndex, topx, topy + 370, 8);
+        drawFactorIndex("CUR", debugCurrentIndex, topx, topy + 370, 0);
+
+        double[] _clf = new double[OUTPUT_LENGTH];
+        for (int k = 0; k < _surfStats.length; k++)
+            _clf[k] = _surfStats[k]*_classifyStats[k];
+
+        drawFactor(_clf, 0, _clf.length, "Cl x Firing Output", topx, topy + 440, 0);
+        drawFactorIndex("BEST", debugFactorIndex, topx, topy + 430, 8);
+        drawFactorIndex("CUR", debugCurrentIndex, topx, topy + 430, 0);
 
         double hitratio = log.getHitRatio();
 
@@ -639,6 +667,8 @@ public class GTSurferMove extends BaseMove {
 
                     g.setColor(getShade(ew.waveGuessFactors[index]));
 
+                    //g.setColor(getShade(_flattenStats[index]));
+
                     if (shadows[index] < 1.0)
                         g.setColor(new Color(141, 64, 169));
 
@@ -708,7 +738,7 @@ public class GTSurferMove extends BaseMove {
             if (ew.distanceTraveled < distance - 18) {
                 surfWave = ew;
 
-                while (x+1 < _enemyWaves.size()) {
+                while (x+1 < _enemyWaves.size() && surfWave2 == null) {
                     x++;
 
                     surfWave2 = _enemyWaves.get(x);
@@ -738,23 +768,28 @@ public class GTSurferMove extends BaseMove {
 
         if (surfWave != null) {
             BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
-            double[] data = basicNetwork.compute(inp).getData();
 
-            surfWave.waveGuessFactors = data;
-            _surfStats = surfWave.waveGuessFactors;
-            _classifyStats = classifyNetwork.compute(new BasicMLData(surfWave.waveGuessFactors)).getData();
+            if (surfWave.waveGuessFactors == null) {
+                double[] data = basicNetwork.compute(inp).getData();
 
-            double[] randGF = randNetwork.compute(inp).getData();
-            double[] stats2 = new double[OUTPUT_LENGTH];
-            double last = randGF[0];
-            stats2[0] = last;
-            for (int i = 1; i < randGF.length-1; i++)
-            {
-                stats2[i] = (randGF[i]+randGF[i-1]+randGF[i+1])/3;
+                surfWave.waveGuessFactors = data;
             }
+            _surfStats = surfWave.waveGuessFactors;
+            _flattenStats = flattenNetwork.compute(inp).getData();
+            _classifyStats = classifyNetwork.compute(new BasicMLData( surfWave.waveGuessFactors)).getData();
+
+            if (surfWave.waveGuessFactorsRand == null) {
+                double[] randGF = randNetwork.compute(inp).getData();
+                double[] stats2 = new double[OUTPUT_LENGTH];
+                double last = randGF[0];
+                stats2[0] = last;
+                for (int i = 1; i < randGF.length - 1; i++) {
+                    stats2[i] = (randGF[i] + randGF[i - 1] + randGF[i + 1]) / 3;
+                }
 
 
-            surfWave.waveGuessFactorsRand = stats2;
+                surfWave.waveGuessFactorsRand = stats2;
+            }
             _randStats = surfWave.waveGuessFactorsRand;
 /*
             double sum = 0;
@@ -791,7 +826,7 @@ public class GTSurferMove extends BaseMove {
         }
 
 
-        if (surfWave2 != null) {
+        if (surfWave2 != null && surfWave2.waveGuessFactors == null) {
             BasicMLData inp = new BasicMLData(getInputForWave(surfWave2));
             surfWave2.waveGuessFactors = basicNetwork.compute(inp).getData();
         }
@@ -838,7 +873,7 @@ public class GTSurferMove extends BaseMove {
         double gfwidth = CTUtils.botWidthAimAngle(Math.sqrt((enemyX-startX)*(enemyX-startX) + (enemyY-startY)*(enemyY-startY) ));
 
         double[] centers = RBFUtils.getCenters(-1.0, 1.0, OUTPUT_LENGTH);
-        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*3, centers);
+        double[] ideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*4, centers);
 
         if (ew.imaginary)
         {
@@ -846,27 +881,24 @@ public class GTSurferMove extends BaseMove {
             double[] data = basicNetwork.compute(inp).getData();
             ew.waveGuessFactors = data;
         }
-
-        // Scoring separately
-        log.add(isHit, (int)ew.distanceTraveled);
-
-        if (!isHit)
-        {
-            _classifyData.clear();
-            _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal)));
-            classifyTrain.iteration(1);
-            return;
-        }
         else
         {
-            _classifyData.clear();
-            double[] ideal2 = new double[ideal.length];
-            for (int i = 0; i < ideal2.length; i++)
-            {
-                ideal2[i] = Math.max(0.0, ew.waveGuessFactors[i] - ideal[i]);
+            log.add(isHit, (int) ew.distanceTraveled);
+
+            if (!isHit) {
+                _classifyData.clear();
+                _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal)));
+                classifyTrain.iteration(1);
+                return;
+            } else {
+                _classifyData.clear();
+                double[] ideal2 = new double[ideal.length];
+                for (int i = 0; i < ideal2.length; i++) {
+                    ideal2[i] = Math.max(0.0, ew.waveGuessFactors[i] - ideal[i]);
+                }
+                _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal2)));
+                classifyTrain.iteration(1);
             }
-            _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal2)));
-            classifyTrain.iteration(1);
         }
 
         /*
@@ -898,13 +930,18 @@ public class GTSurferMove extends BaseMove {
             _lastHitsData.remove(5);
         }
 
-        for (int i = 0; i < _lastHitsData.size(); i++)
-        {
-            _theData.add(_lastHitsData.get(i));
+        if (!ew.imaginary) {
+            basicTrain.iteration(2);
         }
+        else
+        {
+            for (int i = 0; i < _lastHitsData.size(); i++)
+            {
+                _theData.add(_lastHitsData.get(i));
+            }
 
-
-        basicTrain.iteration(1);
+            flattenTrain.iteration(1);
+        }
 
 
         _theData.clear();
@@ -1199,6 +1236,7 @@ public class GTSurferMove extends BaseMove {
                     ) {
                 //intercepted = true;
 
+                /*
                 double[][] corners = surfWave.getCorners(new Rectangle2D.Double(travel.location.x-18, travel.location.y-18, 36, 36));
                 double wd1 = surfWave.fireLocation.distance(new Point2D.Double(corners[0][0], corners[0][1])) - surfWave.distanceTraveled - distTraveled;
                 double wd2 = surfWave.fireLocation.distance(new Point2D.Double(corners[1][0], corners[1][1])) - surfWave.distanceTraveled - distTraveled;
@@ -1208,8 +1246,13 @@ public class GTSurferMove extends BaseMove {
                 double mindist = Math.min(Math.min(wd1,wd2), Math.min(wd3,wd4));
 
                 if (mindist <= surfWave.bulletVelocity)
+                */
                     intercepted = true;
             }
+
+            if (!intercepted)
+                travel.reachable = true;
+
         } while(!intercepted && counter < 500);
 
         //we can't get the the last point, because we need to slow down
@@ -1217,6 +1260,31 @@ public class GTSurferMove extends BaseMove {
             traveledPoints.remove(traveledPoints.size() - 1);
 
         return traveledPoints;
+    }
+
+    // Removes all points with distance closer than 7 to cut down on points to evaluate
+    public ArrayList<RobotState> filterPredictions(ArrayList<RobotState> states)
+    {
+        ArrayList<RobotState> fstates = new ArrayList<RobotState>();
+        Point2D.Double lastloc = new Point2D.Double(-10,0);
+
+        for (int i = states.size()-1; i >= 0; i--)
+        {
+            Point2D.Double curloc = states.get(i).location;
+
+            if (lastloc.distance(curloc) > 7.0 || i == 0)
+            {
+                RobotState state = states.get(i);
+                fstates.add((RobotState)state.clone());
+
+                lastloc = (Point2D.Double) curloc.clone();
+            }
+            else
+                System.out.println("REMOVED A POINT.. RAWWWRRWRWRW!!!!!!!!!!!!!!!!!!!!!!!!");
+
+        }
+
+        return fstates;
     }
 
     /*
@@ -1319,17 +1387,22 @@ public class GTSurferMove extends BaseMove {
         for (int i = startIndex; i <= endIndex; i++)
         {
                 shadowCoverage += 1.0-shadows[i];
-                danger += ((hitratio > 0.15 && cRound >= 17 ? _classifyStats[i] : 0) + surfWave.waveGuessFactors[i]);
+
+                //if (log.getHitRatio() > 0.12)
+                //    danger += _flattenStats[i];
+                //else
+                    danger += surfWave.waveGuessFactors[i]+ _classifyStats[i];
 
         }
 
         danger /= totalSpan;
         danger = Math.max(danger, extraDanger);
 
+        /*
         double percentShadowCoverage = shadowCoverage / Math.max(1.0, endIndex-startIndex);
         if (percentShadowCoverage > 0.6)
             danger *= 1.0-percentShadowCoverage;
-
+        */
 
         if (!_fieldRect.contains(start.location))
             return Double.MAX_VALUE;
@@ -1353,8 +1426,8 @@ public class GTSurferMove extends BaseMove {
         Graphics g = _robot.getGraphics();
         if(surfWave.safePoints == null){
 
-            ArrayList<RobotState> forwardPoints = predictPositions(start, startTime, surfWave, 1);
-            ArrayList<RobotState> reversePoints = predictPositions(start, startTime, surfWave, -1);
+            ArrayList<RobotState> forwardPoints = filterPredictions(predictPositions(start, startTime, surfWave, 1));
+            ArrayList<RobotState> reversePoints = filterPredictions(predictPositions(start, startTime, surfWave, -1));
 
             int FminDangerIndex = 0;
             int RminDangerIndex = 0;
@@ -1368,6 +1441,7 @@ public class GTSurferMove extends BaseMove {
                 g.drawOval((int)state.location.x,(int)state.location.y, 4, 4);
 
                 double thisDanger = checkDangerSpan(state, surfWave, totalSpan);
+                state.danger = thisDanger;
                 //double thisDanger = checkDanger(surfWave, (Point2D.Double) (forwardPoints.get(i)));
 
                 if(thisDanger <= FminDanger){
@@ -1383,6 +1457,7 @@ public class GTSurferMove extends BaseMove {
                 g.drawOval((int)state.location.x,(int)state.location.y, 4, 4);
 
                 double thisDanger = checkDangerSpan(state, surfWave, totalSpan);
+                state.danger = thisDanger;
 
                 if(thisDanger <= RminDanger){
                     RminDangerIndex = i;
@@ -1618,6 +1693,52 @@ public class GTSurferMove extends BaseMove {
 
             goTo(p1);
         }
+    }
+
+    // Simulates a STRAIGHT movement from start to end, stopping at the point at which the enemy wave
+    // will hit with precise intersection
+    //
+    // RobotState start = new RobotState(_myLocation, _robot.getHeadingRadians(), _robot.getVelocity(), _robot.getTime(), _robot.getDistanceRemaining())
+    private ArrayList<RobotState> goToSim(RobotState start, RobotState end, EnemyWave ew, int startTime)
+    {
+        double distance = start.location.distance(end.location);
+        double angle = Utils.normalRelativeAngle(CTUtils.absoluteBearing(start.location, end.location) - start.heading);
+        if (Math.abs(angle) > Math.PI/2) {
+            distance = -distance;
+            if (angle > 0) {
+                angle -= Math.PI;
+            }
+            else {
+                angle += Math.PI;
+            }
+        }
+
+        double angleToTurn = angle * Math.signum(Math.abs((int) distance));
+        int ticksToIntersect = CTUtils.bulletTicks(ew.currentDistanceToPlayer, ew.bulletPower) + 4;  //
+
+        MovSimStat[] moves = CTUtils.moveSimulator.futurePos(ticksToIntersect, start.location.x, start.location.y,
+                                                          start.velocity,
+                                                          CTUtils.moveSimulator.defaultMaxVelocity,
+                                                          start.heading, start.distanceRemaining, angleToTurn,
+                                                          CTUtils.moveSimulator.defaultMaxTurnRate, 800, 600);
+
+        ArrayList<RobotState> reachablePoints = new ArrayList<RobotState>();
+        int tick = 1;
+        for (int i = 0; i < moves.length; i++)
+        {
+            Point2D.Double futureloc = new Point2D.Double(moves[i].x,moves[i].y);
+
+            reachablePoints.add(new RobotState(futureloc, moves[i].h, moves[i].v, startTime+tick, false));
+
+            if (ew.didIntersect(futureloc, tick+startTime))
+            {
+                break;
+            }
+
+            tick++;
+        }
+
+        return reachablePoints;
     }
 
     private void goTo(Point2D.Double destination) {
