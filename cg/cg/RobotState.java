@@ -6,6 +6,7 @@ public class RobotState implements Comparable<RobotState> {
     public Point2D.Double location;
     public double heading;
     public double velocity;
+    public double angleToTurn;
     public double distanceRemaining;
     public long time;
     public boolean smoothing;
@@ -43,16 +44,22 @@ public class RobotState implements Comparable<RobotState> {
     }
 
     public RobotState(Point2D.Double botLocation, double botHeadingRadians,
-                      double botVelocity, long currentTime, double distanceRemain) {
+                      double botVelocity, long currentTime, double distanceRemain, double turnAngle) {
 
         this(botLocation, botHeadingRadians, botVelocity, currentTime);
 
         this.distanceRemaining = distanceRemain;
+        this.angleToTurn = turnAngle;
     }
 
     public Object clone() {
-        return new RobotState((Point2D.Double) location.clone(), heading,
-                velocity, time, smoothing);
+        RobotState newState = new RobotState((Point2D.Double) location.clone(), heading,
+                velocity, time, distanceRemaining, angleToTurn);
+
+        newState.reachable = this.reachable;
+        newState.danger = this.danger;
+
+        return newState;
     }
 
     public int compareTo(RobotState other)

@@ -21,6 +21,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     long fireTime;
     double bulletVelocity, directAngle, distanceTraveled, bulletPower, playerDistance, maxEscapeAngle;
     int direction, weight;
+    double dweight;
 
     boolean collidedWithBullet = false;
 
@@ -35,6 +36,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     public int timeSinceDirectionChange;
     public double forwardWallDistance;
     public double reverseWallDistance;
+
 
     public Point2D.Double lastTarget = new Point2D.Double();
     public double minFactor = java.lang.Double.POSITIVE_INFINITY;
@@ -51,6 +53,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     double[] waveGuessFactors = null;
     double[] waveGuessFactorsRand;
 
+    public int escapeDirection = 1; // What direction is player traveling relative to fireLocation to move to safest point
     public boolean imaginary = false;
     public boolean redirected = false;
 
@@ -264,7 +267,7 @@ class EnemyWave implements Comparable<EnemyWave> {
                     minFactor, maxFactor
             };
 
-            System.out.println("minFactor: " + minFactor + ", maxFactor: " + maxFactor);
+            //System.out.println("minFactor: " + minFactor + ", maxFactor: " + maxFactor);
 
             //if shadow is outside of the escape angles, don't add it
             if((minFactor > MAX_ESCAPE_FACTOR && maxFactor > MAX_ESCAPE_FACTOR)

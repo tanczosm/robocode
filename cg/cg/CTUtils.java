@@ -479,6 +479,37 @@ public class CTUtils {
         return angle;
     }
 
+    //
+    private static double getNewVelocity(double velocity, double distance) {
+        final double goalVel = Math.min(getMaxVelocity(distance), 8);
+
+        if (velocity >= 0)
+            return limit(velocity - 2,
+                    goalVel, velocity + 1);
+
+        return limit(velocity - 1,
+                goalVel, velocity + maxDecel(-velocity));
+    }
+
+    // Returns the peak velocity for distance
+    final static double getMaxVelocity(double distance) {
+        final double decelTime = Math.max(1, Math.ceil(
+                //sum of 0... decelTime, solving for decelTime
+                //using quadratic formula, then simplified a lot
+                Math.sqrt(distance + 1) - 0.5));
+
+        final double decelDist = (decelTime) * (decelTime - 1);
+        // sum of 0..(decelTime-1)
+        // * Rules.DECELERATION*0.5;c
+
+        return ((decelTime - 1) * 2) + ((distance - decelDist) / decelTime);
+    }
+
+    // Returns the peak amount of deceleration that can be performed if traveling at speed
+    private static final double maxDecel(double speed) {
+        return limit(1, speed * 0.5 + 1, 2);
+    }
+
     public static int sign(double p) {
         return p < 0 ? -1 : 1;
     }
