@@ -1144,7 +1144,7 @@ public class GTSurferMove extends BaseMove {
         double predictedHeading = _robot.getHeadingRadians();
         */
         RobotState travel = (RobotState)start.clone();
-        travel.velocity = 8;
+        //travel.velocity = 8;
 
         double maxTurning, moveAngle, moveDir;
         ArrayList<RobotState> traveledPoints = new ArrayList<RobotState>();
@@ -1263,6 +1263,9 @@ public class GTSurferMove extends BaseMove {
     public ArrayList<RobotState> filterPredictions(ArrayList<RobotState> states)
     {
 
+        return states;
+
+        /*
         ArrayList<RobotState> fstates = new ArrayList<RobotState>();
         Point2D.Double lastloc = new Point2D.Double(-10,0);
 
@@ -1281,7 +1284,7 @@ public class GTSurferMove extends BaseMove {
         }
 
         return fstates;
-
+        */
     }
 
     /*
@@ -1469,18 +1472,32 @@ public class GTSurferMove extends BaseMove {
                 }
             }
 
-            Collections.sort(reversePoints);
-            Collections.sort(forwardPoints);
+
+            //Collections.sort(reversePoints);
+            //Collections.sort(forwardPoints);
+
 
             // Previously we took the top 1 of reverse and forward points
 
             ArrayList<RobotState> bestPoints = new ArrayList<RobotState>();
 
+            bestPoints.addAll(forwardPoints);
+            bestPoints.addAll(reversePoints);
+
+            Collections.sort(bestPoints);
+
+            for (int k = bestPoints.size()-1; k > 7; k--)
+            {
+                bestPoints.remove(k);
+            }
+
+            /*
             for (int p = 0; p < 4 && p < forwardPoints.size(); p++)
                 bestPoints.add(forwardPoints.get(p));
 
             for (int p = 0; p < 4 && p < reversePoints.size(); p++)
                 bestPoints.add(reversePoints.get(p));
+            */
 
             /*
             int bpSize = bestPoints.size();
@@ -1541,9 +1558,20 @@ public class GTSurferMove extends BaseMove {
             Collections.sort(bestPoints);
             //System.out.println("Sorted Best Danger: " + bestPoints.get(0).danger + ", next best: " + bestPoints.get(1).danger);
 
+
+
             if (bestPoints.size() > 0)
             {
-                ArrayList<RobotState> moves = goToSim2(start, bestPoints.get(0), wave, startTime);
+                ArrayList<RobotState> moves;
+
+                RobotState bp = bestPoints.get(0);
+
+                if (forwardPoints.contains(bp))
+                    moves = goToSim3(forwardPoints, wave, startTime);
+                else
+                    moves = goToSim3(reversePoints, wave, startTime);
+
+
                 surfWave.safePoints = moves;
 
                 if (forwardPoints.contains(bestPoints.get(0))) {
@@ -1553,27 +1581,8 @@ public class GTSurferMove extends BaseMove {
                     surfWave.escapeDirection = -1;
 
             }
-            else
-            {
-                /*
-                int minDangerIndex;
 
-                if(FminDanger < RminDanger ){
-                    bestPoints = forwardPoints;
-                    minDangerIndex = FminDangerIndex;
-                }
-                else {
-                    bestPoints = reversePoints;
-                    minDangerIndex = RminDangerIndex;
-                }
-
-                RobotState bestState = bestPoints.get(minDangerIndex);
-
-                while(bestPoints.indexOf(bestState) != -1)
-                    bestPoints.remove(bestPoints.size() - 1);
-                bestPoints.add(bestState);
-                */
-            }
+            bestPoints.add(0, (RobotState)start.clone());
 
             /*
 
@@ -1582,7 +1591,7 @@ public class GTSurferMove extends BaseMove {
             //surfWave.safePoints = bestPoints;
 
             //debugging - so that we should always be on top of the last point
-            bestPoints.add(0, (RobotState)start.clone());
+
         }
         else
         if(surfWave.safePoints.size() > 1) {
@@ -1599,12 +1608,12 @@ public class GTSurferMove extends BaseMove {
                 g.setColor(new Color(253, 0, 223));
                 g.drawOval((int)state.location.x,(int)state.location.y, 4, 4);
 
-                /*
+
                 if(state.location.distanceSq(_myLocation) > 20*20*1.1) {
                     //System.out.println("goToPoint.dist=" + goToPoint.distance(_myLocation) + ", gtp size: " + surfWave.safePoints.size());
                     //if it's not 20 units away we won't reach max velocity
                     return state;
-                }*/
+                }
             }
             //if we don't find a point 20 units away, return the end point
             return surfWave.safePoints.get(surfWave.safePoints.size() - 1);
@@ -1798,9 +1807,109 @@ public class GTSurferMove extends BaseMove {
                 _robot.setMaxVelocity(8);
 */
 
-            //goTo(p1);
-            goTo2(start,bestState);
+            _robot.setMaxVelocity(bestState.maxVelocity);
+            goTo(p1);
+            //goTo2(start,bestState);
         }
+    }
+
+    private ArrayList<RobotState> goToSim3(ArrayList<RobotState> moves, BestWaves best, int startTime)
+    {
+        boolean brakeAtEnd = true;
+
+        Graphics g = _robot.getGraphics();
+        g.setColor(new Color(54, 255, 0));
+
+        int ticksToIntersect = CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower);  //
+
+        ArrayList<RobotState> reachablePoints = new ArrayList<RobotState>();
+
+        // First ascertain which points are reachable
+        for (int tick = 0; tick < ticksToIntersect && tick < moves.size(); tick++) {
+
+            RobotState futureState = moves.get(tick);
+            Point2D.Double futureloc = futureState.location;
+
+            g.drawOval((int)futureloc.x-2, (int)futureloc.y-2, 4, 4);
+
+            if (best.firstWave.didIntersect(futureloc, tick+startTime))
+            {
+                break;
+            }
+
+            reachablePoints.add(futureState);
+        }
+
+        // Now recompute the distance remaining at each point from back to front
+        if (reachablePoints.size() > 0)
+        {
+            Point2D.Double lastpt = reachablePoints.get(reachablePoints.size()-1).location;
+
+            /*
+            for (int p = reachablePoints.size()-2; p >= 0; p--)
+            {
+                if (lastpt.distance(reachablePoints.get(p).location) < 4)
+                    reachablePoints.remove(p);
+            }*/
+
+            // This code is going to set all the distanceRemaining values correctly
+            double dist = 0;
+            Point2D.Double lastp = reachablePoints.get(reachablePoints.size()-1).location;
+            for (int p = reachablePoints.size()-2; p >= 0; p--)
+            {
+                Point2D.Double pastloc = reachablePoints.get(p).location;
+                dist += lastp.distance(pastloc);
+                reachablePoints.get(p).distanceRemaining = dist;
+                lastp = pastloc;
+            }
+
+            System.out.println("Last point time: " + reachablePoints.get(reachablePoints.size()-1).time + ", Current Time: " + _robot.getTime());
+        }
+
+
+        double maxvelocity = reachablePoints.get(0).velocity;
+
+        for (int i = 0; i < reachablePoints.size(); i++)
+        {
+            RobotState pt = reachablePoints.get(i);
+
+            double distance = pt.distanceRemaining;
+            double lastvelocity = pt.velocity;
+
+            double tdistance = Math.abs(distance);
+            double brakedist = 0;
+            if (brakeAtEnd) {
+                brakedist = brakingDistance(lastvelocity);
+                System.out.println("Braking distance is " + brakedist + " at velocity " + lastvelocity);
+
+            }
+
+            int time = ticksToIntersect - i;
+            double traveled = Math.abs(time * maxvelocity);
+
+            if (Math.abs(distance) <= brakedist && brakeAtEnd)
+            {
+                maxvelocity -= 2;
+            }
+            else
+            {
+                if (traveled < tdistance) {
+                    if (Math.abs(lastvelocity) < 8)
+                        maxvelocity += 1.0;
+
+                } else if (traveled > tdistance+brakedist)
+                    maxvelocity -= 2.0;
+            }
+            maxvelocity = CTUtils.clamp(maxvelocity, 0, 8);
+
+            pt.maxVelocity = maxvelocity;
+        }
+
+
+        System.out.println("Ticks to Intersect: " + ticksToIntersect + ", Reachable Points: " + reachablePoints.size());
+        //System.out.println("Fastest reachable time: " + fastestReachableTime(start.location.distance(end.location), start.velocity));
+
+        return reachablePoints;
     }
 
     // Simulates a STRAIGHT movement from start to end, stopping at the point at which the enemy wave
@@ -2106,8 +2215,11 @@ g.drawOval((int)futureloc.x-2, (int)futureloc.y-2, 4, 4);
         return ticks;
     }
 
+
     private void goTo2(RobotState start, RobotState end)
     {
+        goTo(end.location);
+        /*
         double angle = Utils.normalRelativeAngle(CTUtils.absoluteBearing(start.location, end.location) - _robot.getHeadingRadians());
         double distance = start.location.distance(end.location) + end.distanceRemaining;
         //  System.out.println("DISTANCE REMAINING: " + end.distanceRemaining);
@@ -2122,6 +2234,7 @@ g.drawOval((int)futureloc.x-2, (int)futureloc.y-2, 4, 4);
         }
         _robot.setTurnRightRadians(angle * Math.signum(Math.abs((int) distance)));
         _robot.setAhead(distance);
+        */
     }
 
     private void goTo(Point2D.Double destination) {

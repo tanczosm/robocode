@@ -6,6 +6,7 @@ public class RobotState implements Comparable<RobotState> {
     public Point2D.Double location;
     public double heading;
     public double velocity;
+    public double maxVelocity = 8;
     public double angleToTurn;
     public double distanceRemaining;
     public long time;
