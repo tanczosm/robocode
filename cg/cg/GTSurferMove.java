@@ -1144,6 +1144,8 @@ public class GTSurferMove extends BaseMove {
         double predictedHeading = _robot.getHeadingRadians();
         */
         RobotState travel = (RobotState)start.clone();
+        travel.velocity = 8;
+
         double maxTurning, moveAngle, moveDir;
         ArrayList<RobotState> traveledPoints = new ArrayList<RobotState>();
 
@@ -1211,8 +1213,9 @@ public class GTSurferMove extends BaseMove {
             // calculate the new predicted position
             travel.location = CTUtils.project(travel.location, travel.heading, travel.velocity);
 
-            if (simpleWallDistance(travel.location) < 26)
-                break;
+            /*
+            if (simpleWallDistance(travel.location) < 55)
+                break;*/
 
             RobotState rs = new RobotState((Point2D.Double)travel.location.clone(),
                                             travel.heading,
@@ -1376,16 +1379,17 @@ public class GTSurferMove extends BaseMove {
         double danger = 0.0;
         double hitratio = log.getHitRatio();
         int cRound = _robot.getRoundNum();
+        int cTime = (int)_robot.getTime();
         double shadowCoverage = 0;
 
         for (int i = startIndex; i <= endIndex; i++)
         {
                 shadowCoverage += 1.0-shadows[i];
 
-                //if (log.getHitRatio() > 0.12)
-                //    danger += _flattenStats[i];
-                //else
-                    danger += surfWave.waveGuessFactors[i]; //+ _classifyStats[i];
+                /*if (log.getHitRatio() > 0.18)
+                    danger += surfWave.waveGuessFactors[(i*cTime)%(int)OUTPUT_LENGTH]; // _flattenStats[i];
+                else*/
+                danger += surfWave.waveGuessFactors[i];// + (log.getHitRatio() > 0.12 ? _classifyStats[i]/2.0 : 0); //+ _classifyStats[i];
 
         }
 
@@ -1478,6 +1482,7 @@ public class GTSurferMove extends BaseMove {
             for (int p = 0; p < 4 && p < reversePoints.size(); p++)
                 bestPoints.add(reversePoints.get(p));
 
+            /*
             int bpSize = bestPoints.size();
             for (int q = 0; q < bpSize; q++)
             {
@@ -1489,6 +1494,7 @@ public class GTSurferMove extends BaseMove {
             }
 
             System.out.println("Best Danger: " + bestPoints.get(0).danger + ", next best: " + bestPoints.get(1).danger);
+            */
 
             double minDanger = 0;
             if (wave.secondWave != null) {
@@ -1533,7 +1539,7 @@ public class GTSurferMove extends BaseMove {
             }
 
             Collections.sort(bestPoints);
-            System.out.println("Sorted Best Danger: " + bestPoints.get(0).danger + ", next best: " + bestPoints.get(1).danger);
+            //System.out.println("Sorted Best Danger: " + bestPoints.get(0).danger + ", next best: " + bestPoints.get(1).danger);
 
             if (bestPoints.size() > 0)
             {
@@ -1869,6 +1875,38 @@ public class GTSurferMove extends BaseMove {
 
             //maxvelocity = 8;
             System.out.println("Escape direction: " + best.firstWave.escapeDirection + ", Time: " + time + ", lastvel: " + lastvelocity + ", maxvel: " + maxvelocity + ", traveled: " + traveled + ", tdistance: " + tdistance + ", brakdist: " + brakedist);
+
+            int dir = (int)(best.firstWave.escapeDirection * Math.signum(Math.abs((int) distance)));
+
+            /*
+            RobotState next = CTUtils.nextPerpendicularWallSmoothedLocation(
+                    last, CTUtils.absoluteBearing(best.firstWave.fireLocation,
+                            last), lastvelocity, maxvelocity, lastheading,
+                    0, dir < 0, time,
+                    _fieldRect, 800, 600,
+                    WALL_STICK, false);
+*/
+            /*
+            double absBearingRadians = CTUtils.absoluteBearing(best.firstWave.fireLocation,
+                    last);
+            angle= Utils.normalRelativeAngle(
+                    absBearingRadians + (-dir * ((Math.PI / 2) + 0))) - lastheading;
+            if (Math.abs(angle) > Math.PI/2) {
+                distance = -distance;
+                if (angle > 0) {
+                    angle -= Math.PI;
+                }
+                else {
+                    angle += Math.PI;
+                }
+            }
+            angleToTurn = angle*Math.signum(Math.abs((int) distance));
+            */
+            /*
+            moveAngle =        CTUtils.wallSmoothing(_fieldRect, _robot.getBattleFieldWidth(), _robot.getBattleFieldHeight(),
+                    travel.location,  CTUtils.absoluteBearing(surfWave.fireLocation,
+                            travel.location) + (direction * (offset)), direction, WALL_STICK)
+                    - travel.heading;*/
 
             MovSimStat[] move = CTUtils.moveSimulator.futurePos(ticksToIntersect, last.x, last.y,
                     lastvelocity,
