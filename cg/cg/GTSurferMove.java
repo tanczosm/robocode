@@ -60,6 +60,7 @@ public class GTSurferMove extends BaseMove {
     public static double _flattenStats[] = new double[BINS];
 
     public Point2D.Double _myLocation;     // our bot's location
+    public Point2D.Double _lastLocation;
     public Point2D.Double _enemyLocation;  // enemy bot's location
 
     public Point2D.Double _lastGoToPoint;
@@ -1574,7 +1575,7 @@ public class GTSurferMove extends BaseMove {
 
                 surfWave.safePoints = moves;
 
-                if (forwardPoints.contains(bestPoints.get(0))) {
+                if (forwardPoints.contains(bp)) {
                     surfWave.escapeDirection = 1;
                 }
                 else
@@ -1597,7 +1598,9 @@ public class GTSurferMove extends BaseMove {
         if(surfWave.safePoints.size() > 1) {
 
             RobotState sp = surfWave.safePoints.get(0);
-            surfWave.safePoints.remove(0);
+
+            if (sp.location.distance(_myLocation) <= 8)
+                surfWave.safePoints.remove(0);
         }
 
         if(surfWave.safePoints.size() >= 1){
@@ -1608,12 +1611,15 @@ public class GTSurferMove extends BaseMove {
                 g.setColor(new Color(253, 0, 223));
                 g.drawOval((int)state.location.x,(int)state.location.y, 4, 4);
 
+                return state;
 
+                /*
                 if(state.location.distanceSq(_myLocation) > 20*20*1.1) {
                     //System.out.println("goToPoint.dist=" + goToPoint.distance(_myLocation) + ", gtp size: " + surfWave.safePoints.size());
-                    //if it's not 20 units away we won't reach max velocity
+                    //if it's not 20 units away we won't reach max
                     return state;
                 }
+                */
             }
             //if we don't find a point 20 units away, return the end point
             return surfWave.safePoints.get(surfWave.safePoints.size() - 1);
@@ -1662,6 +1668,8 @@ public class GTSurferMove extends BaseMove {
             RobotState bestState = getBestPoint(start, best);
 
             Point2D.Double p1 = bestState.location;
+
+            System.out.println("Real distance remaining: " + bestState.distanceRemaining);
 
             Graphics g = _robot.getGraphics();
             g.setColor(Color.RED);
@@ -1832,6 +1840,7 @@ public class GTSurferMove extends BaseMove {
 
             g.drawOval((int)futureloc.x-2, (int)futureloc.y-2, 4, 4);
 
+
             if (best.firstWave.didIntersect(futureloc, tick+startTime))
             {
                 break;
@@ -1843,6 +1852,7 @@ public class GTSurferMove extends BaseMove {
         // Now recompute the distance remaining at each point from back to front
         if (reachablePoints.size() > 0)
         {
+
             Point2D.Double lastpt = reachablePoints.get(reachablePoints.size()-1).location;
 
             /*
@@ -1853,7 +1863,7 @@ public class GTSurferMove extends BaseMove {
             }*/
 
             // This code is going to set all the distanceRemaining values correctly
-            double dist = 0;
+            double dist = 8;
             Point2D.Double lastp = reachablePoints.get(reachablePoints.size()-1).location;
             for (int p = reachablePoints.size()-2; p >= 0; p--)
             {
@@ -1867,7 +1877,7 @@ public class GTSurferMove extends BaseMove {
         }
 
 
-        double maxvelocity = reachablePoints.get(0).velocity;
+        double maxvelocity = Math.abs(reachablePoints.get(0).velocity);
 
         for (int i = 0; i < reachablePoints.size(); i++)
         {
@@ -1876,16 +1886,16 @@ public class GTSurferMove extends BaseMove {
             double distance = pt.distanceRemaining;
             double lastvelocity = pt.velocity;
 
-            double tdistance = Math.abs(distance);
+            double tdistance = Math.abs(distance) + 8 + 8 + 8 + 8;
             double brakedist = 0;
             if (brakeAtEnd) {
                 brakedist = brakingDistance(lastvelocity);
-                System.out.println("Braking distance is " + brakedist + " at velocity " + lastvelocity);
+                System.out.println("Braking distance is " + brakedist + " at velocity " + lastvelocity + ", i=" + i + ", remaining: " + distance + ", maxvel: " + maxvelocity);
 
             }
 
-            int time = ticksToIntersect - i;
-            double traveled = Math.abs(time * maxvelocity);
+
+            double traveled = (ticksToIntersect-i) * maxvelocity;
 
             if (Math.abs(distance) <= brakedist && brakeAtEnd)
             {
@@ -1894,12 +1904,13 @@ public class GTSurferMove extends BaseMove {
             else
             {
                 if (traveled < tdistance) {
-                    if (Math.abs(lastvelocity) < 8)
+                    if (Math.abs(lastvelocity) < 9)
                         maxvelocity += 1.0;
 
                 } else if (traveled > tdistance+brakedist)
-                    maxvelocity -= 2.0;
+                    maxvelocity -= 1.0;
             }
+
             maxvelocity = CTUtils.clamp(maxvelocity, 0, 8);
 
             pt.maxVelocity = maxvelocity;
