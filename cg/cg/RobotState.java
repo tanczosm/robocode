@@ -7,6 +7,7 @@ public class RobotState implements Comparable<RobotState> {
     public double heading;
     public double velocity;
     public double maxVelocity = 8;
+    public int direction;
     public double angleToTurn;
     public double distanceRemaining;
     public long time;
@@ -22,6 +23,7 @@ public class RobotState implements Comparable<RobotState> {
         location = botLocation;
         heading = botHeadingRadians;
         velocity = botVelocity;
+        direction = 1;
         smoothing = false;
         danger = Double.MAX_VALUE;
         distanceRemaining = 0;
@@ -59,6 +61,7 @@ public class RobotState implements Comparable<RobotState> {
 
         newState.reachable = this.reachable;
         newState.danger = this.danger;
+        newState.direction = this.direction;
 
         return newState;
     }

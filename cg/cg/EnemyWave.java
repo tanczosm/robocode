@@ -15,6 +15,8 @@ class EnemyWave implements Comparable<EnemyWave> {
 
     private static final double MAX_ESCAPE_FACTOR = 1.1;
 
+    public boolean dirty = true;  // If true refresh safePoints when possible
+
     Point2D.Double fireLocation;
     public Rectangle2D.Double hitbox = new Rectangle2D.Double();
 
