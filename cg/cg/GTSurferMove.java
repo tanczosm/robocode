@@ -368,7 +368,7 @@ public class GTSurferMove extends BaseMove {
         if (bulletPowers.size() > 5)
             bulletPowers.remove(5);
 
-        if (_surfData.size() > 2 && !imaginary) {
+        if (_surfData.size() > 2/* && !imaginary*/) {
 
             surfData _surf = ((surfData)_surfData.get(2));
 
@@ -1393,10 +1393,14 @@ public class GTSurferMove extends BaseMove {
         {
                 shadowCoverage += 1.0-shadows[i];
 
-                /*if (log.getHitRatio() > 0.18)
-                    danger += surfWave.waveGuessFactors[(i*cTime)%(int)OUTPUT_LENGTH]; // _flattenStats[i];
-                else*/
-                danger += surfWave.waveGuessFactors[i]; //(log.getHitRatio() > 0.12 ? _classifyStats[i]/2.0 : 0);;// * shadows[i];// + (log.getHitRatio() > 0.12 ? _classifyStats[i]/2.0 : 0); //+ _classifyStats[i];
+                if (log.getHitRatio() >= 0.1)
+                    danger += Math.max(surfWave.waveGuessFactors[i], _flattenStats[i])* (shadows[i]/2);
+                else
+                    danger += surfWave.waveGuessFactors[i] * (shadows[i]/2);
+
+                //danger += surfWave.waveGuessFactors[i] + (log.getHitRatio() > 0.12 ? _flattenStats[i]/2 : 0);;// * shadows[i];// + (log.getHitRatio() > 0.12 ? _classifyStats[i]/2.0 : 0); //+ _classifyStats[i];
+
+
         }
 
         danger /= totalSpan;
@@ -1411,14 +1415,14 @@ public class GTSurferMove extends BaseMove {
         if (!_fieldRect.contains(start.location))
             return Double.MAX_VALUE;
 
-        //double close = _myLocation.distance(_enemyLocation);
-        //close = 1 + 4 * (1/Math.min(400, close));
+        double close = _myLocation.distance(_enemyLocation);
+        close = 1 + 4 * (1/Math.min(800, close));
 
         double tta = surfWave.currentDistanceToPlayer / surfWave.bulletVelocity;
 
         //danger *= position.distance(surfWave.fireLocation) - surfWave.distanceTraveled;
         double relevance = tta * tta - 200 * tta + 10000;
-        return danger; // * relevance * surfWave.dweight;
+        return danger * relevance * surfWave.dweight * close;
     }
 
     public double processSecondWave (EnemyWave wave, int time, RobotState point)
