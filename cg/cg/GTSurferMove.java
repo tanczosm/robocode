@@ -1213,6 +1213,7 @@ public class GTSurferMove extends BaseMove {
             travel.velocity += (travel.velocity * moveDir < 0 ? 2*moveDir : moveDir);
             travel.velocity = CTUtils.limit(-8, travel.velocity, 8);
             travel.direction = (int)moveDir;
+            travel.time = startTime + counter + 1;
 
             // calculate the new predicted position
             travel.location = CTUtils.project(travel.location, travel.heading, travel.velocity);
@@ -1224,6 +1225,8 @@ public class GTSurferMove extends BaseMove {
             RobotState rs = new RobotState((Point2D.Double)travel.location.clone(),
                                             travel.heading,
                                             travel.velocity, startTime+counter+1);
+
+            rs.direction = travel.direction;
 
             //add this point the our prediction
             traveledPoints.add(rs);

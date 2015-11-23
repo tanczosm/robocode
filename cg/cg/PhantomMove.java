@@ -1172,6 +1172,8 @@ public class PhantomMove extends BaseMove {
             // otherwise you want to accelerate (look at the factor "2")
             travel.velocity += (travel.velocity * moveDir < 0 ? 2*moveDir : moveDir);
             travel.velocity = CTUtils.limit(-8, travel.velocity, 8);
+            travel.direction = (int)moveDir;
+            travel.time = startTime + counter + 1;
 
             // calculate the new predicted position
             travel.location = CTUtils.project(travel.location, travel.heading, travel.velocity);
@@ -1182,6 +1184,8 @@ public class PhantomMove extends BaseMove {
             RobotState rs = new RobotState((Point2D.Double)travel.location.clone(),
                     travel.heading,
                     travel.velocity, startTime+counter+1);
+
+            rs.direction = direction;
 
             //add this point the our prediction
             traveledPoints.add(rs);
@@ -1298,8 +1302,69 @@ public class PhantomMove extends BaseMove {
         return danger;
     }
 
-    public RobotState getBestPoint(final RobotState start, EnemyWave surfWave){
 
+    public double processSecondWave (final EnemyWave wave, int time, RobotState point)
+    {
+        double distance = wave.getRadius(time);
+
+        // Calculate how much of the wave we need to be concerned with
+        double botWidthAimAngle = CTUtils.botWidthAimAngle(distance - 34, 40.0);
+
+        double gfSpan = 2.0 / (double)OUTPUT_LENGTH; // -1.0 to 1.0 is a 2.0 span over OUTPUT_LENGTH factors
+        int totalSpan = (int)Math.max(Math.ceil(botWidthAimAngle / gfSpan), 1.0);
+
+        double minDanger = 0;
+        if (wave != null)
+        {
+
+            //RobotState point = wave.safePoints.get(wave.safePoints.size()-1);
+
+            ArrayList<RobotState> fPoints = predictPositions(point, (int) point.time, wave, 1);
+            ArrayList<RobotState> rPoints = predictPositions(point, (int) point.time, wave, -1);
+
+            for (RobotState p : fPoints)
+                p.danger = checkDangerSpan(p, wave, totalSpan);
+
+            for (RobotState p : rPoints)
+                p.danger = checkDangerSpan(p, wave, totalSpan);
+
+            ArrayList<RobotState> secondPoints = new ArrayList<RobotState>();
+
+            secondPoints.addAll(fPoints);
+            secondPoints.addAll(rPoints);
+
+            Collections.sort(secondPoints);
+
+            if (secondPoints.size() == 0)
+                minDanger = Double.MAX_VALUE;
+            else {
+
+                RobotState sec = secondPoints.get(0);
+
+                wave.escapeDirection = sec.direction;
+                wave.dirty = true;
+
+                if (fPoints.contains(sec))
+                    wave.safePoints = fPoints;
+                else
+                    wave.safePoints = rPoints;
+
+                minDanger = sec.danger;
+
+                if (minDanger == Double.MAX_VALUE)
+                    minDanger = 0;
+            }
+
+
+
+        }
+
+        return minDanger;
+    }
+
+    public RobotState getBestPoint(final RobotState start, BestWaves best){
+
+        EnemyWave surfWave = best.firstWave;
         int startTime = (int)start.time;
         double distance = surfWave.distanceTraveled;
 
@@ -1315,6 +1380,8 @@ public class PhantomMove extends BaseMove {
             ArrayList<RobotState> forwardPoints = predictPositions(start, startTime, surfWave, 1);
             ArrayList<RobotState> reversePoints = predictPositions(start, startTime, surfWave, -1);
 
+            ArrayList<RobotState> allPoints = new ArrayList<RobotState>();
+
             int FminDangerIndex = 0;
             int RminDangerIndex = 0;
             double FminDanger = Double.POSITIVE_INFINITY;
@@ -1327,6 +1394,7 @@ public class PhantomMove extends BaseMove {
                 g.drawOval((int)state.location.x,(int)state.location.y, 4, 4);
 
                 double thisDanger = checkDangerSpan(state, surfWave, totalSpan);
+                state.danger = thisDanger;
                 //double thisDanger = checkDanger(surfWave, (Point2D.Double) (forwardPoints.get(i)));
 
                 if(thisDanger <= FminDanger){
@@ -1342,13 +1410,32 @@ public class PhantomMove extends BaseMove {
                 g.drawOval((int)state.location.x,(int)state.location.y, 4, 4);
 
                 double thisDanger = checkDangerSpan(state, surfWave, totalSpan);
+                state.danger = thisDanger;
 
                 if(thisDanger <= RminDanger){
                     RminDangerIndex = i;
                     RminDanger = thisDanger;
                 }
             }
+            allPoints.addAll(forwardPoints);
+            allPoints.addAll(reversePoints);
+
+            Collections.sort(allPoints);
+
+            while (allPoints.size() > 8)
+                allPoints.remove(allPoints.size()-1);
+
+            for (RobotState p : allPoints)
+            {
+               //p.danger += processSecondWave(best.secondWave, (int)p.time+1, p) * 0.25;
+            }
+
+            Collections.sort(allPoints);
+
+
             ArrayList<RobotState> bestPoints;
+
+            /*
             int minDangerIndex;
 
             if(FminDanger < RminDanger ){
@@ -1361,6 +1448,10 @@ public class PhantomMove extends BaseMove {
             }
 
             RobotState bestState = bestPoints.get(minDangerIndex);
+            */
+            bestPoints = forwardPoints.contains(allPoints.get(0)) ? forwardPoints : reversePoints;
+            RobotState bestState = allPoints.get(0); //bestPoints.get(bestPoints.indexOf(allPoints.get(0)));
+
 
             while(bestPoints.indexOf(bestState) != -1)
                 bestPoints.remove(bestPoints.size() - 1);
@@ -1435,7 +1526,7 @@ public class PhantomMove extends BaseMove {
             predictedHeading = _robot.getHeadingRadians();
              */
             RobotState start = new RobotState((Point2D.Double)_myLocation.clone(), _robot.getHeadingRadians(), _robot.getVelocity(), (int)_robot.getTime());
-            RobotState bestState = getBestPoint(start, best.firstWave);
+            RobotState bestState = getBestPoint(start, best);
 
             Point2D.Double p1 = bestState.location;
 
