@@ -22,8 +22,9 @@ public class Movement {
 
         this.movers.add(new GTSurferMove(robot, radarScanner));
         this.movers.add(new CTSurferMove(robot, radarScanner));
+        this.movers.add(new PhantomMove(robot, radarScanner));
 
-        selectedMover = this.movers.get(0);
+        selectedMover = this.movers.get(2);
     }
 
     public void selectMover (String name)
