@@ -56,6 +56,7 @@ public class PhantomMove extends BaseMove {
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
     public static double _randStats[] = new double[BINS];
     public static double _classifyStats[] = new double[BINS];
+    public static double _flattenStats[] = new double[BINS];
     public Point2D.Double _myLocation;     // our bot's location
     public Point2D.Double _enemyLocation;  // enemy bot's location
 
@@ -477,6 +478,11 @@ public class PhantomMove extends BaseMove {
         drawFactorIndex("BEST", debugFactorIndex, topx, topy + 290, 8);
         drawFactorIndex("CUR", debugCurrentIndex, topx, topy + 290, 0);
 
+        drawFactor(_flattenStats, 0, _flattenStats.length, "Flattener Output", topx, topy + 380, 0);
+
+        drawFactorIndex("BEST", debugFactorIndex, topx, topy + 370, 8);
+        drawFactorIndex("CUR", debugCurrentIndex, topx, topy + 370, 0);
+
         double hitratio = log.getHitRatio();
 
         g.setColor(Color.GREEN);
@@ -745,6 +751,7 @@ public class PhantomMove extends BaseMove {
             surfWave.waveGuessFactors = data;
             _surfStats = surfWave.waveGuessFactors;
             _classifyStats = classifyNetwork.compute(new BasicMLData(surfWave.waveGuessFactors)).getData();
+            _flattenStats = flattenNetwork.compute(inp).getData();
 
             double[] randGF = randNetwork.compute(inp).getData();
             double[] stats2 = new double[OUTPUT_LENGTH];
@@ -903,7 +910,7 @@ public class PhantomMove extends BaseMove {
 
             basicTrain.iteration(2);
 
-
+            /*
             _theData.clear();
             if (_lastHitsData.size() > 20) {
                 int randIndex = (int) (_rand.nextDouble() * 19);
@@ -912,6 +919,7 @@ public class PhantomMove extends BaseMove {
             }
 
             int fillCount = 5;
+
 
             _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
             fillCount--;
@@ -927,7 +935,21 @@ public class PhantomMove extends BaseMove {
 
             if (_theData.size() > 0)
                 randTrain.iteration(1);
+            */
+        }
+        else
+        {
+                _theData.clear();
+                _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
 
+                for (int i = 0; i < _lastHitsData.size(); i++)
+                {
+                    _theData.add(_lastHitsData.get(i));
+                }
+
+                _lastHitsData.add(_theData.get(_theData.size() - 1));
+
+                flattenTrain.iteration(1);
         }
 
 
@@ -1129,7 +1151,7 @@ public class PhantomMove extends BaseMove {
             {
                 optimalDistance = 500;
             }
-            //optimalDistance = 400;
+            optimalDistance = 550d + (double)((_robot.getRoundNum() % 3) * 50d);
 
             double distance =travel.location.distance(surfWave.fireLocation);
             double offset = Math.PI/2 - 1 + distance/optimalDistance; // distance / 400 ?
@@ -1250,7 +1272,27 @@ public class PhantomMove extends BaseMove {
         double wallDist = simpleWallDistance(start.location);
         double extraDanger = wallDist <= 96 ? ((wallDist-96)/64) : 0;
         boolean hasShadows = false;
+        double shadowDanger = 1.00;
 
+        surfWave.resetFactors();
+        surfWave.standingIntersection(start.location);
+
+        double eRisk = 0;
+        final double factorRange = surfWave.maxFactor - surfWave.minFactor;
+        // how much do the shadows cover our min to max risk area
+        double coveredRange = 0;
+        for(final double[] intr : surfWave.bulletShadows) {
+            if(intr[0] >= surfWave.maxFactor || intr[1] <= surfWave.minFactor) continue;
+            double minf = intr[0];
+            double maxf = intr[1];
+            if(minf < surfWave.minFactor) minf = surfWave.minFactor;
+            if(maxf > surfWave.maxFactor) maxf = surfWave.maxFactor;
+            coveredRange += maxf - minf;
+        }
+        final double ratio = coveredRange / factorRange;
+        shadowDanger = 1.0 - ratio;
+
+        /*
         Arrays.fill(shadows, 1.0);
 
         for (int i = 0; i < surfWave.bulletShadows.size(); i++)
@@ -1269,7 +1311,7 @@ public class PhantomMove extends BaseMove {
                 shadows[k] = 0.0;
                 //surfWave.waveGuessFactors[k] = 0;
             }
-        }
+        }*/
 
         //if (hasShadows)
         //    System.out.println(Arrays.toString(shadows));
@@ -1281,17 +1323,14 @@ public class PhantomMove extends BaseMove {
 
         for (int i = startIndex; i <= endIndex; i++)
         {
-            shadowCoverage += 1.0-shadows[i];
+            //shadowCoverage += 1.0-shadows[i];
             danger += ((hitratio > 0.15 && cRound >= 17 ? _classifyStats[i] : 0) + surfWave.waveGuessFactors[i]);
 
         }
 
         danger /= totalSpan;
-        danger = Math.max(danger, extraDanger);
+        danger = Math.max(danger, extraDanger) * shadowDanger;
 
-        double percentShadowCoverage = shadowCoverage / Math.max(1.0, endIndex-startIndex);
-        if (percentShadowCoverage > 0.6)
-            danger *= 1.0-percentShadowCoverage;
 
 
         if (!_fieldRect.contains(start.location))
@@ -1375,8 +1414,9 @@ public class PhantomMove extends BaseMove {
         int totalSpan = (int)Math.max(Math.ceil(botWidthAimAngle / gfSpan), 1.0);
         //System.out.println("Span: " + totalSpan + " gfSpan: " + gfSpan + ", botWidthAimAngle: " + botWidthAimAngle);
         Graphics g = _robot.getGraphics();
-        if(surfWave.safePoints == null){
+        if(surfWave.safePoints == null || surfWave.dirty){
 
+            surfWave.dirty = false;
             ArrayList<RobotState> forwardPoints = predictPositions(start, startTime, surfWave, 1);
             ArrayList<RobotState> reversePoints = predictPositions(start, startTime, surfWave, -1);
 
@@ -1425,10 +1465,12 @@ public class PhantomMove extends BaseMove {
             while (allPoints.size() > 8)
                 allPoints.remove(allPoints.size()-1);
 
+            /*
             for (RobotState p : allPoints)
             {
-               //p.danger += processSecondWave(best.secondWave, (int)p.time+1, p) * 0.25;
-            }
+               if (best.secondWave != null)
+                    p.danger += processSecondWave(best.secondWave, (int)p.time, p)*0.25;
+            }*/
 
             Collections.sort(allPoints);
 
