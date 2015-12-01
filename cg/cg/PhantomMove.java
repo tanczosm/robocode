@@ -73,6 +73,11 @@ public class PhantomMove extends BaseMove {
 
     private Random _rand;
 
+    // Enemy gunheat tracking
+    double enemyGunheat = 3.0;
+    double defaultEnemyGunheat = 3.0;
+
+
     // TEMPORARY
     int debugFactorIndex = 0;
     int debugCurrentIndex = 0;
@@ -196,6 +201,7 @@ public class PhantomMove extends BaseMove {
     {
         bullets.clear();
         _enemyWaves.clear();
+        enemyGunheat = defaultEnemyGunheat;
         //log.reset();
 
     }
@@ -270,17 +276,6 @@ public class PhantomMove extends BaseMove {
     public static double WALL_STICK = 160;
 
 
-    public double getEvasion(double distance, double lastDistance, double currentDistance, double advancingVelocity)
-    {
-        if (lastDistance < 150d || (lastDistance < 225d && advancingVelocity > 4.5d))
-            return 2.67d;
-
-        if (distance < currentDistance)
-            return ONE_QUARTER + (ONE_QUARTER / (1d + Math.exp((distance - currentDistance) / 100d)) - ONE_EIGHTH);
-
-        return ONE_QUARTER;
-    }
-
     public void scan(ScannedRobotEvent e) {
         _myLocation = new Point2D.Double(_robot.getX(), _robot.getY());
 
@@ -344,8 +339,20 @@ public class PhantomMove extends BaseMove {
         boolean imaginary = true;
         double bulletPower = _radarScanner._oppEnergy - e.getEnergy();
 
-        if (bulletPower < 3.01 && bulletPower > 0.09)
+        if (bulletPower < 3.01 && bulletPower > 0.09) {
+
             imaginary = false;
+            enemyGunheat = 1.0 + (bulletPower/5.0);
+
+            for (int i = 0; i < _enemyWaves.size(); i++)
+            {
+                if (_enemyWaves.get(i).gunheatwave)
+                {
+                    _enemyWaves.remove(i);
+                    break;
+                }
+            }
+        }
         else
         {
             bulletPower = 2;
@@ -366,14 +373,24 @@ public class PhantomMove extends BaseMove {
         if (bulletPowers.size() > 5)
             bulletPowers.remove(5);
 
+        boolean gunHeatWave = false;
+        if (enemyGunheat <= 0.2)
+        {
+            enemyGunheat = 1.0 + (bulletPower/5.0);
+            gunHeatWave = true;
+        }
+
         if (bulletPower < 3.01 && bulletPower > 0.09
-                && _surfData.size() > 2 && !imaginary) {
+                && _surfData.size() > 2) {
+
+
 
             surfData _surf = ((surfData)_surfData.get(2));
 
             EnemyWave ew = new EnemyWave();
             ew.fireTime = _robot.getTime() - 1;
-            ew.imaginary = imaginary;
+            ew.imaginary = imaginary && !gunHeatWave;
+            ew.gunheatwave = gunHeatWave;
             ew.bulletVelocity = CTUtils.bulletVelocity(bulletPower);
             ew.distanceTraveled = CTUtils.bulletVelocity(bulletPower);
             ew.direction = _surf.direction;
@@ -389,6 +406,9 @@ public class PhantomMove extends BaseMove {
             ew.lateralVelocity = _surf.lateralVelocity;
             ew.advancingVelocity = _surf.advancingVelocity;
 
+            double bp = (20 - ew.bulletVelocity) / 3;
+            ew.dweight = (double)((bp * 4 + Math.max(0, bp - 1) * 2));
+            
             _enemyWaves.add(ew);
 
             calculateShadowsForWave(ew);
@@ -406,6 +426,8 @@ public class PhantomMove extends BaseMove {
     }
 
     public void update(ScannedRobotEvent e) {
+
+        enemyGunheat -= 0.1;
 
         updateWaves();
         doSurfing();
@@ -487,7 +509,7 @@ public class PhantomMove extends BaseMove {
 
         g.setColor(Color.GREEN);
         g.setFont(new Font("Verdana", Font.PLAIN, 11));
-        g.drawString("Enemy Hit Ratio: " + new DecimalFormat("#.##").format(hitratio), 10, 588);
+        g.drawString("Enemy Hit Ratio: " + new DecimalFormat("#.##").format(hitratio) + ", Gunheat: " + new DecimalFormat("#.##").format(enemyGunheat), 10, 588);
 
     }
 
@@ -851,9 +873,9 @@ public class PhantomMove extends BaseMove {
 
         if (ew.imaginary)
         {
-            BasicMLData inp = new BasicMLData(getInputForWave(ew));
-            double[] data = basicNetwork.compute(inp).getData();
-            ew.waveGuessFactors = data;
+            //BasicMLData inp = new BasicMLData(getInputForWave(ew));
+            //double[] data = basicNetwork.compute(inp).getData();
+            //ew.waveGuessFactors = data;
         }
         else {
             // Scoring separately
@@ -901,6 +923,9 @@ public class PhantomMove extends BaseMove {
             _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
             _lastHitsData.add(_theData.get(_theData.size() - 1));
 
+            if (_lastHitsData.size() > 20)
+                _lastHitsData.remove(0);
+
         /*
         for (int i = 0; i < _lastHitsData.size(); i++)
         {
@@ -939,15 +964,17 @@ public class PhantomMove extends BaseMove {
         }
         else
         {
-                _theData.clear();
-                _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(ideal)));
+              double[] narrowideal = RBFUtils.processDataIntoFeatures(gf, gfwidth*1.5, centers);
 
-                for (int i = 0; i < _lastHitsData.size(); i++)
+                _theData.clear();
+                _theData.add(new BasicMLDataPair(new BasicMLData(getInputForWave(ew)), new BasicMLData(narrowideal)));
+
+                for (int i = _lastHitsData.size()-1; i >= 0 && _theData.size() < 6; i--)
                 {
                     _theData.add(_lastHitsData.get(i));
                 }
 
-                _lastHitsData.add(_theData.get(_theData.size() - 1));
+                //_lastHitsData.add(_theData.get(_theData.size() - 1));
 
                 flattenTrain.iteration(1);
         }
@@ -967,6 +994,8 @@ public class PhantomMove extends BaseMove {
             // look through the EnemyWaves, and find one that could've hit us.
             for (int x = 0; x < _enemyWaves.size(); x++) {
                 EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+
+                if (ew.imaginary) continue;
 
                 if (Math.abs(ew.distanceToPoint(hitBulletLocation) - ew.distanceTraveled) < 50) {
                     hitWave = ew;
@@ -1000,6 +1029,8 @@ public class PhantomMove extends BaseMove {
             // look through the EnemyWaves, and find one that could've hit us.
             for (int x = 0; x < _enemyWaves.size(); x++) {
                 EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
+
+                if (ew.imaginary) continue;
 
                 if (Math.abs(ew.distanceTraveled -
                         _myLocation.distance(ew.fireLocation)) < 50
@@ -1151,7 +1182,7 @@ public class PhantomMove extends BaseMove {
             {
                 optimalDistance = 500;
             }
-            optimalDistance = 550d + (double)((_robot.getRoundNum() % 3) * 50d);
+            optimalDistance = 500d + (double)((_robot.getRoundNum() % 3) * 50d);
 
             double distance =travel.location.distance(surfWave.fireLocation);
             double offset = Math.PI/2 - 1 + distance/optimalDistance; // distance / 400 ?
@@ -1318,6 +1349,7 @@ public class PhantomMove extends BaseMove {
 
         double danger = 0.0;
         double hitratio = log.getHitRatio();
+        double rollinghitratio = log.getRollingHitRatio(50);
         int cRound = _robot.getRoundNum();
         double shadowCoverage = 0;
 
@@ -1326,19 +1358,27 @@ public class PhantomMove extends BaseMove {
             //shadowCoverage += 1.0-shadows[i];
             danger += ((hitratio > 0.15 && cRound >= 17 ? _classifyStats[i] : 0) + surfWave.waveGuessFactors[i]);
 
+            if (rollinghitratio > 0.12)
+            {
+                danger += _flattenStats[i];
+            }
+
         }
 
         danger /= totalSpan;
         danger = Math.max(danger, extraDanger) * shadowDanger;
 
-
+        double waveDist = surfWave.fireLocation.distance(start.location);
+        danger /= (float) Math.cbrt(Math.min(_enemyLocation.distance(start.location) - 34, waveDist));
+        float tta = (float) ((surfWave.fireLocation.distance(start.location) - surfWave.distanceTraveled) / surfWave.bulletVelocity);
+        float relevance = tta * tta - 200 * tta + 10000;
 
         if (!_fieldRect.contains(start.location))
             return Double.MAX_VALUE;
 
         //danger *= position.distance(surfWave.fireLocation) - surfWave.distanceTraveled;
 
-        return danger;
+        return danger * relevance * surfWave.dweight;
     }
 
 

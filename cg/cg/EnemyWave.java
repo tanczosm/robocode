@@ -57,6 +57,7 @@ class EnemyWave implements Comparable<EnemyWave> {
 
     public int escapeDirection = 1; // What direction is player traveling relative to fireLocation to move to safest point
     public boolean imaginary = false;
+    public boolean gunheatwave = false;
     public boolean redirected = false;
 
     public EnemyWave() {
