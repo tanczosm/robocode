@@ -408,7 +408,7 @@ public class PhantomMove extends BaseMove {
 
             double bp = (20 - ew.bulletVelocity) / 3;
             ew.dweight = (double)((bp * 4 + Math.max(0, bp - 1) * 2));
-            
+
             _enemyWaves.add(ew);
 
             calculateShadowsForWave(ew);
