@@ -297,6 +297,7 @@ public class NNGun extends BaseGun {
                 }
             }
 
+            /*
             if (inputs != null) {
                 drawFactor(inputs, 0, 11, "Distance", 0, 0, 0);
                 drawFactor(inputs, 11, 8, "Lateral Velocity", 0, 0, 1);
@@ -308,7 +309,7 @@ public class NNGun extends BaseGun {
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7, 7, "Forward Wall Radians", 0, 0, 7);
                 drawFactor(inputs, 11 + 8 + 11 + 9 + 6 + 7 + 7 + 7, 4, "Reverse Wall Radians", 0, 0, 8);
 
-            }
+            }*/
         }
 
         Graphics2D g = _robot.getGraphics();

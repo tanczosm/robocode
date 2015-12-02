@@ -397,8 +397,9 @@ public class PhantomMove extends BaseMove {
             ew.directAngle = _surf.absBearing;
             ew.maxEscapeAngle = CTUtils.maxEscapeAngle(ew.bulletVelocity);
             ew.fireLocation = (Point2D.Double)_enemyLocation.clone(); // last tick
+            ew.playerDistance = ew.fireLocation.distance(_myLocation);
 
-            ew.acceleration = _surf.acceleration;
+                    ew.acceleration = _surf.acceleration;
             ew.lateralDistanceLast10 = _surf.lateralDistanceLast10;
             ew.timeSinceDirectionChange = _surf.timeSinceDirectionChange;
             ew.forwardWallDistance = _surf.forwardWallDistance;
@@ -570,7 +571,7 @@ public class PhantomMove extends BaseMove {
     public double[] getInputForWave(EnemyWave w) {
 
         // Distance - Range 0 - 800, split into 11 features
-        double bft = w.playerDistance / _radarScanner.FIRE_SPEED;
+        double bft = w.playerDistance / CTUtils.bulletVelocity(w.bulletPower); // _radarScanner.FIRE_SPEED;
         double[] fdistance = RBFUtils.processDataIntoFeatures(Math.min(bft, 105), 105, RBFUtils.getCenters(0, 105, 11));
 
         // Acceleration - Range 0 - 1.0, split into 7 features
@@ -620,12 +621,15 @@ public class PhantomMove extends BaseMove {
 
         BestWaves best = getClosestSurfableWave();
         double[] shadows = new double[OUTPUT_LENGTH];
+        double[] inputs = null;
 
         Arrays.fill(shadows, 1.0);
 
         if (best != null && best.firstWave != null && best.firstWave.safePoints != null)
         {
             EnemyWave surfWave = best.firstWave;
+            inputs = surfWave.inputs;
+
             RobotState state = (RobotState)surfWave.safePoints.get(surfWave.safePoints.size()-1);
             Point2D.Double pt = state.location;
             g.setColor(new Color(1, 255, 0));
@@ -649,13 +653,11 @@ public class PhantomMove extends BaseMove {
 
 
 
-
         for (int i = 0; i < _enemyWaves.size(); i++) {
 
             EnemyWave ew = (EnemyWave)_enemyWaves.get(i);
 
             if (ew.imaginary) continue;
-
 
             Point2D.Double center = ew.fireLocation;
 
@@ -697,6 +699,18 @@ public class PhantomMove extends BaseMove {
                 }
             }
         }
+
+
+        if (inputs != null) {
+            drawFactor(inputs, 0, 11, "Distance", 0, 0, 0);
+            drawFactor(inputs, 11, 7, "Acceleration", 0, 0, 1);
+            drawFactor(inputs, 11 + 7, 8, "Lateral Velocity", 0, 0, 2);
+            drawFactor(inputs, 11 + 7 + 8, 7, "Time Since Dir Change", 0, 0, 3);
+            drawFactor(inputs, 11 + 7 + 8 + 7, 7, "Forward Wall Radians", 0, 0, 4);
+            drawFactor(inputs, 11 + 7 + 8 + 7 + 7, 4, "Reverse Wall Radians", 0, 0, 5);
+            drawFactor(inputs, 11 + 7 + 8 + 7 + 7 + 4, 5, "Advancing Velocity", 0, 0, 6);
+        }
+
     }
 
     public void updateWaves() {
@@ -767,9 +781,12 @@ public class PhantomMove extends BaseMove {
         //ramerFilter.setEpsilon(0.05);
 
         if (surfWave != null) {
-            BasicMLData inp = new BasicMLData(getInputForWave(surfWave));
+            double[] input = getInputForWave(surfWave);
+
+            BasicMLData inp = new BasicMLData(input);
             double[] data = basicNetwork.compute(inp).getData();
 
+            surfWave.inputs = input;
             surfWave.waveGuessFactors = data;
             _surfStats = surfWave.waveGuessFactors;
             _classifyStats = classifyNetwork.compute(new BasicMLData(surfWave.waveGuessFactors)).getData();
@@ -1505,12 +1522,12 @@ public class PhantomMove extends BaseMove {
             while (allPoints.size() > 8)
                 allPoints.remove(allPoints.size()-1);
 
-            /*
+
             for (RobotState p : allPoints)
             {
                if (best.secondWave != null)
                     p.danger += processSecondWave(best.secondWave, (int)p.time, p)*0.25;
-            }*/
+            }
 
             Collections.sort(allPoints);
 

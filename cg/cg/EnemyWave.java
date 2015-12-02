@@ -54,6 +54,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     ArrayList<RobotState> safePoints;
     double[] waveGuessFactors = null;
     double[] waveGuessFactorsRand;
+    double[] inputs = null;
 
     public int escapeDirection = 1; // What direction is player traveling relative to fireLocation to move to safest point
     public boolean imaginary = false;

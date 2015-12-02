@@ -240,10 +240,10 @@ public class Targeting {
         if (RadarScanner.FIRE_POWER > playerEnergy || playerEnergy < 15) {
             RadarScanner.FIRE_POWER = 0.1d;
         }
-        /*
-        if (_robot.getRoundNum() < 3)
-            RadarScanner.FIRE_POWER = 0.1d; // Use dodging capability to collect firing data.. we should live longer and get smarter
-        */
+
+        //if (_robot.getTime() < 120)
+        //    RadarScanner.FIRE_POWER = 0.1d; // Use dodging capability to collect firing data.. we should live longer and get smarter
+
 
         if (V.mode == V.Modes.TARGET_ONLY)
             RadarScanner.FIRE_POWER = 3;

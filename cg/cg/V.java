@@ -21,7 +21,7 @@ public class V extends AdvancedRobot {
     public static Targeting _targeting = null;
     public static Movement _movement = null;
 
-    public static Modes mode = Modes.UNRESTRICTED; // Modes.MOVEMENT_CHALLENGE;
+    public static Modes mode = Modes.MOVEMENT_CHALLENGE;
     public static RaikoGun _raikoGun;
 
     public void run() {
