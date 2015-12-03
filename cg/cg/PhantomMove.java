@@ -15,6 +15,7 @@ import robocode.util.Utils;
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.io.*;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -50,7 +51,7 @@ public class PhantomMove extends BaseMove {
     private ArrayList<MLDataPair> _lastHitsData;
 
     public static final int INPUT_LENGTH = 49;
-    public static final int OUTPUT_LENGTH = 113;
+    public static final int OUTPUT_LENGTH = 191; // 113;
 
     public static int BINS = OUTPUT_LENGTH;
     public static double _surfStats[] = new double[BINS]; // we'll use 47 bins
@@ -82,6 +83,8 @@ public class PhantomMove extends BaseMove {
     int debugFactorIndex = 0;
     int debugCurrentIndex = 0;
 
+
+    boolean saveNetwork = false;
 
     double _lastVelocity = 0;
     int _lastDirection = 1;
@@ -118,13 +121,19 @@ public class PhantomMove extends BaseMove {
         _enemyLocation = new Point2D.Double();
         _lastGunHeat = _robot.getGunHeat();
 
-        basicNetwork = new BasicNetwork();
-        basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
-        //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, OUTPUT_LENGTH/2));
-        basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
-        basicNetwork.getStructure().finalizeStructure();
-        basicNetwork.reset();
-        basicNetwork.reset(1000);
+        if (saveNetwork)
+            basicNetwork = loadNetwork("basicMove.dat");
+
+        if (basicNetwork == null)
+        {
+            basicNetwork = new BasicNetwork();
+            basicNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
+            //basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), true, OUTPUT_LENGTH/2));
+            basicNetwork.addLayer(new BasicLayer(new ActivationSigmoid(), false, OUTPUT_LENGTH));
+            basicNetwork.getStructure().finalizeStructure();
+            basicNetwork.reset();
+            basicNetwork.reset(1000);
+        }
 
         flattenNetwork = new BasicNetwork();
         flattenNetwork.addLayer(new BasicLayer(null, true, INPUT_LENGTH));
@@ -195,6 +204,12 @@ public class PhantomMove extends BaseMove {
     public void onBattleEnded()
     {
         bullets.clear();
+
+        if (saveNetwork) {
+            System.out.println("Saving network to disk");
+
+            saveNetwork("basicMove.dat", basicNetwork);
+        }
     }
 
     public void onRoundEnded()
@@ -204,6 +219,54 @@ public class PhantomMove extends BaseMove {
         enemyGunheat = defaultEnemyGunheat;
         //log.reset();
 
+    }
+
+    public void saveNetwork (String filename, BasicNetwork n)
+    {
+
+        try {
+
+            File df = _robot.getDataFile(filename);
+
+            RobocodeFileOutputStream fos = null;
+            ObjectOutputStream out = null;
+
+            fos = new RobocodeFileOutputStream(df);
+            out = new ObjectOutputStream(fos);
+            out.writeObject(n);
+            out.close();
+
+        }
+        catch (IOException e)
+        {
+            System.out.println("Unable to serialize object");
+        }
+    }
+
+    public BasicNetwork loadNetwork (String filename)
+    {
+        Serializable object = null;
+        FileInputStream fis = null;
+        ObjectInputStream in = null;
+
+        try {
+            fis = new FileInputStream(_robot.getDataFile(filename));
+            in = new ObjectInputStream(fis);
+            try {
+                object = (Serializable) in.readObject();
+            }
+            catch (ClassNotFoundException cnf)
+            {
+
+            }
+            in.close();
+        }
+        catch (IOException e)
+        {
+            System.out.println("Unable to open \"" + filename + "\"");
+        }
+
+        return (BasicNetwork)object;
     }
 
 
@@ -903,7 +966,14 @@ public class PhantomMove extends BaseMove {
                 _classifyData.add(new BasicMLDataPair(new BasicMLData(ew.waveGuessFactors), new BasicMLData(ideal)));
                 classifyTrain.iteration(1);
                 return;
-            } else {
+            } else  {
+
+                if (ew.waveGuessFactors == null)
+                {
+                    BasicMLData inp = new BasicMLData(getInputForWave(ew));
+                    double[] data = basicNetwork.compute(inp).getData();
+                    ew.waveGuessFactors = data;
+                }
                 _classifyData.clear();
                 double[] ideal2 = new double[ideal.length];
                 for (int i = 0; i < ideal2.length; i++) {
@@ -1526,7 +1596,7 @@ public class PhantomMove extends BaseMove {
             for (RobotState p : allPoints)
             {
                if (best.secondWave != null)
-                    p.danger += processSecondWave(best.secondWave, (int)p.time, p)*0.25;
+                    p.danger += processSecondWave(best.secondWave, (int)p.time, p) * 0.25;
             }
 
             Collections.sort(allPoints);

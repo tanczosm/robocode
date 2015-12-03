@@ -24,6 +24,8 @@ public class V extends AdvancedRobot {
     public static Modes mode = Modes.MOVEMENT_CHALLENGE;
     public static RaikoGun _raikoGun;
 
+    public boolean enemyDead = false;
+
     public void run() {
         _radarScanner.setRobot(this);
         _raikoGun = new RaikoGun(this);
@@ -57,6 +59,21 @@ public class V extends AdvancedRobot {
         } while (true);
     }
 
+    public void onWin(WinEvent event)
+    {
+        /*
+        for (int i = 0; i < 50; i++) {
+            if (_radarScanner._lastScan != null) {
+                System.out.println("Continuing to update movement");
+                if (_movement != null) {
+                    _movement.scan(_radarScanner._lastScan);
+                    _movement.update(_radarScanner._lastScan);
+                }
+            }
+            execute();
+        }*/
+    }
+
     public void onHitByBullet(HitByBulletEvent e) {
 
         _radarScanner.nme.enemyShotHits++;
@@ -84,6 +101,12 @@ public class V extends AdvancedRobot {
 
     }
 
+    public void onRobotDeath(RobotDeathEvent event)
+    {
+        System.out.println("Enemy robot destroyed");
+        enemyDead = true;
+    }
+
 
     public void onBulletMissed(BulletMissedEvent e) {
 
@@ -106,6 +129,8 @@ public class V extends AdvancedRobot {
 
         if (_movement != null)
             _movement.onBattleEnded();
+
+
     }
 
     @Override
@@ -118,6 +143,7 @@ public class V extends AdvancedRobot {
         if (_movement != null)
             _movement.onRoundEnded();
 
+        enemyDead = false;
     }
 
     public void onScannedRobot(ScannedRobotEvent e) {
