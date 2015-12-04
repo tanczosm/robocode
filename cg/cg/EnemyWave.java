@@ -60,6 +60,7 @@ class EnemyWave implements Comparable<EnemyWave> {
     public boolean imaginary = false;
     public boolean gunheatwave = false;
     public boolean redirected = false;
+    public boolean flattenerLogged = false;
 
     public EnemyWave() {
     }

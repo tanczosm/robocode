@@ -4,6 +4,7 @@ import robocode.*;
 
 import java.awt.*;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 
 public class V extends AdvancedRobot {
@@ -59,10 +60,16 @@ public class V extends AdvancedRobot {
         } while (true);
     }
 
+
+    public static Rectangle2D.Double _fieldRect
+            = new java.awt.geom.Rectangle2D.Double(18, 18, 764, 564);
+
     public void onWin(WinEvent event)
     {
-        /*
-        for (int i = 0; i < 50; i++) {
+
+        for (int i = 0; i < 250; i++) {
+
+            /*
             if (_radarScanner._lastScan != null) {
                 System.out.println("Continuing to update movement");
                 if (_movement != null) {
@@ -71,7 +78,27 @@ public class V extends AdvancedRobot {
                 }
             }
             execute();
-        }*/
+            */
+            Point2D.Double _myLocation = new Point2D.Double(getX(), getY());
+            double absBearing = CTUtils.absoluteBearing(_myLocation, _radarScanner.nme.lastlocation);
+            double headingRadians = getHeadingRadians();
+            double stick = 160;//Math.min(160,distance);
+            double distance = _radarScanner.nme.lastlocation.distance(_myLocation);
+            double  v2, offset = Math.PI/2 + 1 - distance/400;
+            int direction = 1;
+
+            while(!_fieldRect.
+                    contains(CTUtils.project(_myLocation, v2 = absBearing + 1 * (offset -= 0.02), stick)
+
+                            // 	getX() + stick * Math.sin(v2 = absBearing + direction * (offset -= .02)), getY() + stick * Math.cos(v2)
+                    ));
+
+
+            if( offset < Math.PI/3 )
+                direction = -direction;
+            setAhead(50 * Math.cos(v2 - headingRadians));
+            setTurnRightRadians(Math.tan(v2 - headingRadians));
+        }
     }
 
     public void onHitByBullet(HitByBulletEvent e) {
@@ -93,11 +120,12 @@ public class V extends AdvancedRobot {
         if (_movement != null) _movement.onBulletHit(e);
 
         Situation best = _radarScanner.registerBulletHit(e.getBullet().getX(), e.getBullet().getY());
+        double bulletPower = e.getBullet ().getPower ();
 
         if (best != null)
-            playerStats.add(true, (int) best.Distance);
+            playerStats.add(true, bulletPower, (int) best.Distance);
         else
-            playerStats.add(true, (int) _radarScanner.nme.distance);
+            playerStats.add(true, bulletPower, (int) _radarScanner.nme.distance);
 
     }
 
@@ -112,10 +140,12 @@ public class V extends AdvancedRobot {
 
         Situation best = _radarScanner.getInterceptingSituation(e.getBullet().getX(), e.getBullet().getY());
 
+        double bulletPower = e.getBullet().getPower();
+
         if (best != null)
-            playerStats.add(false, (int) best.Distance);
+            playerStats.add(false, bulletPower, (int) best.Distance);
         else
-            playerStats.add(false, (int) _radarScanner.nme.distance);
+            playerStats.add(false, bulletPower, (int) _radarScanner.nme.distance);
 
         if (_movement != null) _movement.onBulletMissed(e);
     }

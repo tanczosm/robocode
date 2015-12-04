@@ -881,7 +881,7 @@ public class GTSurferMove extends BaseMove {
         }
         else
         {
-            log.add(isHit, (int) ew.distanceTraveled);
+            log.add(isHit, ew.bulletPower, (int) ew.distanceTraveled);
 
             if (!isHit) {
                 _classifyData.clear();

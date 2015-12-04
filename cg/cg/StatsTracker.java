@@ -28,16 +28,16 @@ package cg;
 			return segmentedStats[distance / segment_length];
 		}
 		
-		public void add (boolean hit, int distance)
+		public void add (boolean hit, double bulletPower, int distance)
 		{
 			
 			//System.out.println(hit ? "HIT" : "MISS");
-			overallStat.add(hit, distance);
+			overallStat.add(hit, bulletPower, distance);
 			for (GameStats gs : segmentedStats)
 			{
 				if (distance >= gs._distance && distance <= (gs._distance+segment_length))
 				{
-					gs.add(hit, distance);
+					gs.add(hit, bulletPower, distance);
 				}
 			}
 		}

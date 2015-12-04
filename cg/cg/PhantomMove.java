@@ -70,6 +70,8 @@ public class PhantomMove extends BaseMove {
     public ArrayList<Double> _LateralVelocityLast10;
     private final LinkedList<Bullet> bullets = new LinkedList<Bullet>();
 
+    private boolean flattenerEnabled = false;
+
     public GameStats log;
 
     private Random _rand;
@@ -218,7 +220,7 @@ public class PhantomMove extends BaseMove {
         _enemyWaves.clear();
         enemyGunheat = defaultEnemyGunheat;
         //log.reset();
-
+        flattenNetwork.reset();
     }
 
     public void saveNetwork (String filename, BasicNetwork n)
@@ -783,8 +785,9 @@ public class PhantomMove extends BaseMove {
         for (int x = 0; x < _enemyWaves.size(); x++) {
             EnemyWave ew = (EnemyWave)_enemyWaves.get(x);
 
+            double distanceFromCenter = _myLocation.distance(ew.fireLocation);
             ew.distanceTraveled = (_robot.getTime() - ew.fireTime) * ew.bulletVelocity;
-            ew.currentDistanceToPlayer = _myLocation.distance(ew.fireLocation) - ew.distanceTraveled;
+            ew.currentDistanceToPlayer = distanceFromCenter - ew.distanceTraveled;
 
             if (!ew.imaginary) {
                 g.setColor(new Color(128, 1, 0));
@@ -798,6 +801,11 @@ public class PhantomMove extends BaseMove {
                 _enemyWaves.remove(x);
                 x--;
             }*/
+            if (ew.distanceTraveled > distanceFromCenter - ew.bulletVelocity && !ew.flattenerLogged && !ew.imaginary)
+            {
+                ew.flattenerLogged = true;
+                log.addShot(ew.bulletPower, ew.distanceTraveled);
+            }
 
             if (ew.distanceTraveled >
                     _myLocation.distance(ew.fireLocation) + 50) {
@@ -806,6 +814,25 @@ public class PhantomMove extends BaseMove {
                 x--;
             }
         }
+
+        /*
+        System.out.println("Flat: " + flattenerEnabled + ", Wt. Enemy Hitrate: " + log.weightedEnemyHitrate + ", Wt. Enemy Firerate: " + log.weightedEnemyFirerate + ", Wt. Hitrate: " + log.weightedEnemyHitrate/log.weightedEnemyFirerate);
+        boolean flat = log.enableFlattener(0.095); // 0.095
+        if (!flattenerEnabled && flat)
+        {
+            flattenerEnabled = true;
+            System.out.println("Flattener Enabled");
+        }
+        else
+        {
+            if (flattenerEnabled && !flat)
+            {
+                System.out.println("Flattener Disabled");
+            }
+            flattenerEnabled = false;
+        }
+        flattenerEnabled = false;
+        */
 
         drawWaves();
 
@@ -959,7 +986,7 @@ public class PhantomMove extends BaseMove {
         }
         else {
             // Scoring separately
-            log.add(isHit, (int) ew.distanceTraveled);
+            log.add(isHit, ew.bulletPower, (int) ew.distanceTraveled);
 
             if (!isHit) {
                 _classifyData.clear();
@@ -1445,7 +1472,7 @@ public class PhantomMove extends BaseMove {
             //shadowCoverage += 1.0-shadows[i];
             danger += ((hitratio > 0.15 && cRound >= 17 ? _classifyStats[i] : 0) + surfWave.waveGuessFactors[i]);
 
-            if (rollinghitratio > 0.12)
+            if (rollinghitratio > 0.12 || flattenerEnabled)
             {
                 danger += _flattenStats[i];
             }
@@ -1717,8 +1744,8 @@ public class PhantomMove extends BaseMove {
             //bulletTicks = (int)Math.max(0, bulletTicks-1);
             int tripTicks = best.firstWave.safePoints.size();
 
-            System.out.println("Original bullet ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) +
-                    ", New: " + bulletTicks);
+            //System.out.println("Original bullet ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) +
+            //        ", New: " + bulletTicks);
 
             //System.out.println("Distance to pdest: " + distRemain + ", bullet Ticks: " + CTUtils.bulletTicks(best.firstWave.currentDistanceToPlayer, best.firstWave.bulletPower) + ", safepoint cnt: " + best.firstWave.safePoints.size());
             //System.out.println("Vel: " + best.firstWave.predictedVelocity + ", size: " + best.firstWave.safePoints.size());
@@ -1735,7 +1762,7 @@ public class PhantomMove extends BaseMove {
             debugFactorIndex = getFactorIndex(best.firstWave, endp1);
             debugCurrentIndex = getFactorIndex(best.firstWave, _myLocation);
 
-            System.out.println("Closest wave direction: " + best.firstWave.direction);
+            //System.out.println("Closest wave direction: " + best.firstWave.direction);
 
 
             if (tripTicks < bulletTicks && bulletTicks < 100)

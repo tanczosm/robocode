@@ -5,13 +5,29 @@ import java.util.ArrayList;
 public class GameStats {
     public int _hits = 0;
     public int _misses = 0;
-    public int _distance = 0;
+    public double _distance = 0;
+    public double totalEnemyDamage = 0;
+    public double weightedEnemyHitrate = 0;
+    public double weightedEnemyFirerate = 0;
     private double _totalDistance;
 
     public ArrayList<Integer> _lastHits = new ArrayList<Integer>();
 
-    public void add(boolean hit, int distance) {
+    public void addShot (double bulletPower, double distance)
+    {
+        double botWidth = 2 * Math.atan(25 / (distance-18));
+        double hitChance = botWidth / CTUtils.maxEscapeAngle(CTUtils.bulletVelocity(bulletPower));
+        weightedEnemyFirerate += 1 / hitChance;
+    }
+
+    public void add(boolean hit, double bulletPower, double distance) {
+        double botWidth = 2 * Math.atan(25 / (distance-18));
+        double hitChance = botWidth / CTUtils.maxEscapeAngle(CTUtils.bulletVelocity(bulletPower));
         if (hit) {
+
+            weightedEnemyHitrate += 1 / hitChance;
+            totalEnemyDamage += CTUtils.bulletDamage(bulletPower);
+
             _hits++;
             _totalDistance += distance;
             _lastHits.add(1);
@@ -24,6 +40,11 @@ public class GameStats {
         {
             _lastHits.remove(0);
         }
+    }
+
+    public boolean enableFlattener (double threshold)
+    {
+        return (weightedEnemyHitrate / weightedEnemyFirerate) > threshold;
     }
 
     public void addDamage(int distance) {
