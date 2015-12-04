@@ -815,7 +815,7 @@ public class PhantomMove extends BaseMove {
             }
         }
 
-        /*
+
         System.out.println("Flat: " + flattenerEnabled + ", Wt. Enemy Hitrate: " + log.weightedEnemyHitrate + ", Wt. Enemy Firerate: " + log.weightedEnemyFirerate + ", Wt. Hitrate: " + log.weightedEnemyHitrate/log.weightedEnemyFirerate);
         boolean flat = log.enableFlattener(0.095); // 0.095
         if (!flattenerEnabled && flat)
@@ -832,7 +832,6 @@ public class PhantomMove extends BaseMove {
             flattenerEnabled = false;
         }
         flattenerEnabled = false;
-        */
 
         drawWaves();
 
@@ -1463,7 +1462,7 @@ public class PhantomMove extends BaseMove {
 
         double danger = 0.0;
         double hitratio = log.getHitRatio();
-        double rollinghitratio = log.getRollingHitRatio(50);
+        double rollinghitratio = log.getRollingHitRatio(25);
         int cRound = _robot.getRoundNum();
         double shadowCoverage = 0;
 
@@ -1472,7 +1471,7 @@ public class PhantomMove extends BaseMove {
             //shadowCoverage += 1.0-shadows[i];
             danger += ((hitratio > 0.15 && cRound >= 17 ? _classifyStats[i] : 0) + surfWave.waveGuessFactors[i]);
 
-            if (rollinghitratio > 0.12 || flattenerEnabled)
+            if (rollinghitratio > 0.12)
             {
                 danger += _flattenStats[i];
             }
