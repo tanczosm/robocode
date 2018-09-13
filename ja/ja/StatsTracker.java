@@ -1,4 +1,4 @@
-package ja;
+package cg;
 
 	
 	public class StatsTracker
